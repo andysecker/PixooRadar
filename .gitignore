@@ -24,3 +24,5 @@ Thumbs.db
 
 # Cached airline logos (auto-downloaded at runtime)
 airline_logos/
+
+config.py
