@@ -33,6 +33,7 @@ from config import (
     COLOR_BOX,
     COLOR_TEXT,
     DATA_REFRESH_SECONDS,
+    FLIGHT_SEARCH_RADIUS_METERS,
     FONT_NAME,
     FONT_PATH,
     LATITUDE,
@@ -241,6 +242,18 @@ def _build_and_send_animation(pizzoo: Pizzoo, data: dict) -> None:
     pizzoo.render(frame_speed=ANIMATION_FRAME_SPEED)
 
 
+def _build_and_send_holding_screen(pizzoo: Pizzoo, status: str = "NO FLIGHTS") -> None:
+    """Render a static holding screen when no active flight should be shown."""
+    radius_km = max(1, int(round(FLIGHT_SEARCH_RADIUS_METERS / 1000)))
+    range_text = f"{radius_km}KM"
+
+    pizzoo.cls()
+    _draw_top_section(pizzoo, logo="", origin="---", destination="---", airline_name=status, y_route=20)
+    _draw_info_page(pizzoo, ("STATUS", status[:10]), ("RANGE", range_text))
+    print("Sending holding screen (no active flight)...")
+    pizzoo.render(frame_speed=ANIMATION_FRAME_SPEED)
+
+
 def main():
     """Main function to run the flight tracker display."""
     parser = argparse.ArgumentParser(description="Pixoo Flight Tracker Display")
@@ -258,6 +271,7 @@ def main():
     pizzoo.load_font(FONT_NAME, FONT_PATH)
 
     current_flight_id = None
+    holding_screen_active = False
     no_data_retry_seconds = NO_FLIGHT_RETRY_SECONDS
 
     while True:
@@ -266,6 +280,11 @@ def main():
         if not data:
             cooldown_remaining = fd.get_api_cooldown_remaining()
             retry_seconds = max(no_data_retry_seconds, cooldown_remaining)
+            if not holding_screen_active:
+                status = "RATE LIMIT" if cooldown_remaining > 0 else "NO FLIGHTS"
+                _build_and_send_holding_screen(pizzoo, status=status)
+                current_flight_id = None
+                holding_screen_active = True
             if cooldown_remaining > 0:
                 print(f"FlightRadar24 rate limit active, retrying in {retry_seconds}s...")
             else:
@@ -276,6 +295,7 @@ def main():
 
         # Reset no-data backoff when data is found.
         no_data_retry_seconds = NO_FLIGHT_RETRY_SECONDS
+        holding_screen_active = False
 
         # Identify the flight by ICAO24 transponder address (unique per aircraft)
         new_flight_id = data.get("icao24")
