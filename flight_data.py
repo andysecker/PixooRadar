@@ -10,14 +10,31 @@ Fetches real-time flight information from FlightRadar24 API, including:
 """
 
 import json
+import re
 from io import BytesIO
 from math import asin, cos, radians, sin, sqrt
 from pathlib import Path
+from time import monotonic
 
 import requests
-from flightradar24 import FlightRadar24API
 
-from config import LOGO_BG_COLOR
+try:
+    # Expected package for this project: FlightRadarAPI (module: FlightRadar24)
+    from FlightRadar24.api import FlightRadar24API
+except ModuleNotFoundError as exc:
+    if exc.name == "FlightRadar24":
+        raise ImportError(
+            "Missing compatible FlightRadar24 client. Install `FlightRadarAPI` and remove `flightradar24` if present: "
+            "`pip uninstall -y flightradar24 && pip install FlightRadarAPI`."
+        ) from exc
+    if exc.name == "bs4":
+        raise ImportError(
+            "Missing dependency `beautifulsoup4` required by `FlightRadarAPI`. "
+            "Install it with: `pip install beautifulsoup4`."
+        ) from exc
+    raise
+
+from config import API_RATE_LIMIT_COOLDOWN_SECONDS, FLIGHT_SEARCH_RADIUS_METERS, LOGO_BG_COLOR
 
 
 class FlightData:
@@ -31,8 +48,63 @@ class FlightData:
     def __init__(self, save_logo_dir: str | None = None, fr_api: FlightRadar24API | None = None):
         self.fr_api = fr_api or FlightRadar24API()
         self.save_logo_dir = Path(save_logo_dir) if save_logo_dir else None
+        self._api_cooldown_until = 0.0
+        self._last_api_error = None
         if self.save_logo_dir:
             self.save_logo_dir.mkdir(parents=True, exist_ok=True)
+
+    def get_api_cooldown_remaining(self) -> int:
+        """Return remaining API cooldown seconds if rate-limited, else 0."""
+        return max(0, int(self._api_cooldown_until - monotonic()))
+
+    def get_last_api_error(self) -> str | None:
+        """Return the latest API-related error message, if any."""
+        return self._last_api_error
+
+    @staticmethod
+    def _extract_status_code(exc: Exception):
+        response = getattr(exc, "response", None)
+        status = getattr(response, "status_code", None)
+        if isinstance(status, int):
+            return status
+        status = getattr(exc, "status_code", None)
+        if isinstance(status, int):
+            return status
+
+        message = str(exc).lower()
+        if "429" in message and ("too many" in message or "rate" in message):
+            return 429
+        return None
+
+    @classmethod
+    def _is_rate_limited_error(cls, exc: Exception) -> bool:
+        if cls._extract_status_code(exc) == 429:
+            return True
+        message = str(exc).lower()
+        return "rate limit" in message or "too many requests" in message
+
+    @staticmethod
+    def _extract_retry_after_seconds(exc: Exception) -> int:
+        response = getattr(exc, "response", None)
+        if response is not None:
+            headers = getattr(response, "headers", {}) or {}
+            retry_after = headers.get("Retry-After")
+            if retry_after:
+                try:
+                    return max(1, int(retry_after))
+                except (TypeError, ValueError):
+                    pass
+
+        match = re.search(r"retry\s*after\s*(\d+)", str(exc), flags=re.IGNORECASE)
+        if match:
+            return max(1, int(match.group(1)))
+
+        return API_RATE_LIMIT_COOLDOWN_SECONDS
+
+    def _set_api_cooldown(self, seconds: int, reason: str) -> None:
+        cooldown_seconds = max(1, int(seconds))
+        self._api_cooldown_until = monotonic() + cooldown_seconds
+        self._last_api_error = reason
 
     @staticmethod
     def haversine(lat1, lon1, lat2, lon2):
@@ -46,10 +118,24 @@ class FlightData:
         return c * r
 
     def _find_closest(self, lat, lon):
-        bounds = self.fr_api.get_bounds_by_point(lat, lon, 100000)
-        flights = self.fr_api.get_flights(bounds=bounds)
+        if self.get_api_cooldown_remaining() > 0:
+            return None, None
+
+        try:
+            bounds = self.fr_api.get_bounds_by_point(lat, lon, FLIGHT_SEARCH_RADIUS_METERS)
+            flights = self.fr_api.get_flights(bounds=bounds)
+        except Exception as exc:
+            if self._is_rate_limited_error(exc):
+                retry_after = self._extract_retry_after_seconds(exc)
+                self._set_api_cooldown(retry_after, f"Rate-limited while fetching flights: {exc}")
+            else:
+                self._last_api_error = f"Flight fetch error: {exc}"
+            return None, None
+
         if not flights:
             return None, None
+
+        self._last_api_error = None
 
         closest_flight = None
         min_dist = float("inf")
@@ -68,7 +154,12 @@ class FlightData:
                 closest_flight = flight
                 try:
                     details = self.fr_api.get_flight_details(closest_flight)
-                except Exception:
+                except Exception as exc:
+                    if self._is_rate_limited_error(exc):
+                        retry_after = self._extract_retry_after_seconds(exc)
+                        self._set_api_cooldown(retry_after, f"Rate-limited while fetching flight details: {exc}")
+                        break
+                    self._last_api_error = f"Flight details error: {exc}"
                     details = None
         return closest_flight, details
 

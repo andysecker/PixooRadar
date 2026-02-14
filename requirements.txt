@@ -1,4 +1,5 @@
 pizzoo
 Pillow
 requests
-FlightRadar24
+FlightRadarAPI
+beautifulsoup4

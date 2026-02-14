@@ -38,6 +38,8 @@ from config import (
     LATITUDE,
     LOGO_DIR,
     LONGITUDE,
+    NO_FLIGHT_MAX_RETRY_SECONDS,
+    NO_FLIGHT_RETRY_SECONDS,
     PIXOO_IP,
 )
 from flight_data import FlightData
@@ -256,14 +258,24 @@ def main():
     pizzoo.load_font(FONT_NAME, FONT_PATH)
 
     current_flight_id = None
+    no_data_retry_seconds = NO_FLIGHT_RETRY_SECONDS
 
     while True:
         data = fd.get_closest_flight_data(LATITUDE, LONGITUDE)
 
         if not data:
-            print("No flight data available, retrying...")
-            sleep(5)
+            cooldown_remaining = fd.get_api_cooldown_remaining()
+            retry_seconds = max(no_data_retry_seconds, cooldown_remaining)
+            if cooldown_remaining > 0:
+                print(f"FlightRadar24 rate limit active, retrying in {retry_seconds}s...")
+            else:
+                print(f"No flight data available, retrying in {retry_seconds}s...")
+            sleep(retry_seconds)
+            no_data_retry_seconds = min(no_data_retry_seconds * 2, NO_FLIGHT_MAX_RETRY_SECONDS)
             continue
+
+        # Reset no-data backoff when data is found.
+        no_data_retry_seconds = NO_FLIGHT_RETRY_SECONDS
 
         # Identify the flight by ICAO24 transponder address (unique per aircraft)
         new_flight_id = data.get("icao24")
