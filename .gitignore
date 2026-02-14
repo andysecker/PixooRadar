@@ -26,3 +26,5 @@ Thumbs.db
 airline_logos/
 
 config.py
+
+config.local.py
