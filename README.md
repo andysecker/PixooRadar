@@ -114,6 +114,10 @@ The app switches display state based on data availability:
 
 When no usable flight is available, stale flight content is cleared and replaced by idle output.
 
+Weather refresh logging is explicit:
+- `Weather updated from API (...)` when new weather is fetched successfully.
+- `Weather refresh failed (...); using cached/fallback weather data.` when provider calls fail.
+
 ## Project Structure
 
 - `display_flight_data_pizoo.py` main app + rendering/state machine

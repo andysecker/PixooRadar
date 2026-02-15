@@ -229,11 +229,11 @@ def _format_humidity(humidity_pct) -> str:
 
 def _format_wind_kph(wind_kph) -> str:
     if wind_kph is None:
-        return "--Mph" if WEATHER_WIND_SPEED_UNIT.lower() == "mph" else "--Kph"
+        return "-- Mph" if WEATHER_WIND_SPEED_UNIT.lower() == "mph" else "-- Kph"
     if WEATHER_WIND_SPEED_UNIT.lower() == "mph":
         wind_mph = int(round(float(wind_kph) * 0.621371))
-        return f"{wind_mph}Mph"
-    return f"{int(round(float(wind_kph)))}Kph"
+        return f"{wind_mph} Mph"
+    return f"{int(round(float(wind_kph)))} Kph"
 
 
 def _format_wind_dir(wind_dir_deg) -> str:
@@ -487,7 +487,13 @@ def main():
             current_flight_id = None
             if target_state == STATE_IDLE_WEATHER:
                 force_refresh = current_state == STATE_FLIGHT_ACTIVE
-                weather_payload, _ = wx.get_current_with_options(force_refresh=force_refresh)
+                weather_payload, refreshed = wx.get_current_with_options(force_refresh=force_refresh)
+                if refreshed:
+                    weather_error = wx.get_last_error()
+                    if weather_error:
+                        print(f"Weather refresh failed ({weather_error}); using cached/fallback weather data.")
+                    else:
+                        print(f"Weather updated from API ({weather_payload.get('source', 'unknown source')}).")
                 _build_and_send_weather_idle_screen(pizzoo, weather_payload)
             elif target_state == STATE_RATE_LIMIT:
                 _build_and_send_holding_screen(pizzoo, status="RATE LIMIT")
@@ -499,6 +505,11 @@ def main():
         elif target_state == STATE_IDLE_WEATHER:
             weather_payload, refreshed = wx.get_current()
             if refreshed:
+                weather_error = wx.get_last_error()
+                if weather_error:
+                    print(f"Weather refresh failed ({weather_error}); using cached/fallback weather data.")
+                else:
+                    print(f"Weather updated from API ({weather_payload.get('source', 'unknown source')}).")
                 _build_and_send_weather_idle_screen(pizzoo, weather_payload)
 
         if target_state == STATE_RATE_LIMIT:

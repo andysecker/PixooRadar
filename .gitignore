@@ -28,3 +28,5 @@ airline_logos/
 config.py
 
 config.local.py
+
+AGENTS.md
