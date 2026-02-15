@@ -64,11 +64,17 @@ RUNWAY_HEADING_DEG = 110
 # At 400ms × 9 frames per page = ~3.6s per page, ~10.8s full cycle
 ANIMATION_FRAME_SPEED = 300
 
-# Flight speed display unit: "mph" or "kt"
+# Flight speed display unit: "mph" or "kt" (displayed as Mph/Kt)
 FLIGHT_SPEED_UNIT = "mph"
 
-# Weather wind speed display unit: "mph" or "kph"
+# Weather wind speed display unit: "mph" or "kmh" (legacy "kph" also accepted).
 WEATHER_WIND_SPEED_UNIT = "mph"
+
+# Verbose runtime logging for state transitions, API polling, and retry behavior.
+LOG_VERBOSE_EVENTS = True
+
+# Standard Python logging level (e.g. DEBUG, INFO, WARNING, ERROR).
+LOG_LEVEL = "INFO"
 
 # =============================================================================
 # Colors

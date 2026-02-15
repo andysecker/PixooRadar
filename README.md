@@ -103,6 +103,10 @@ All settings are in `config.py`.
 - `FONT_NAME`, `FONT_PATH`
 - `LOGO_DIR`
 
+### Logging
+- `LOG_LEVEL` (`DEBUG`, `INFO`, `WARNING`, `ERROR`)
+- `LOG_VERBOSE_EVENTS` (when `False`, suppresses info-level chatter)
+
 ## Runtime Behavior
 
 The app switches display state based on data availability:
@@ -123,6 +127,7 @@ Pixoo reconnect logging is explicit:
 - `Connecting to Pixoo at ...` on connect attempts.
 - `Pixoo unavailable (...). Retrying in ...s...` while offline.
 - `Lost Pixoo connection while rendering ...` when connection drops mid-run.
+- `Pixoo offline; pausing flight/weather API updates until reconnect succeeds.` when data polling is paused.
 
 ## Project Structure
 

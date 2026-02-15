@@ -20,7 +20,9 @@ Configuration:
 """
 
 import argparse
+import logging
 import os
+import socket
 import subprocess
 import sys
 from math import cos, radians, sin
@@ -39,12 +41,15 @@ from config import (
     FONT_NAME,
     FONT_PATH,
     LATITUDE,
+    LOG_LEVEL,
+    LOG_VERBOSE_EVENTS,
     LOGO_DIR,
     LONGITUDE,
     IDLE_MODE,
     NO_FLIGHT_MAX_RETRY_SECONDS,
     NO_FLIGHT_RETRY_SECONDS,
     PIXOO_IP,
+    PIXOO_PORT,
     PIXOO_RECONNECT_SECONDS,
     RUNWAY_HEADING_DEG,
     WEATHER_REFRESH_SECONDS,
@@ -85,6 +90,21 @@ STATE_IDLE_WEATHER = "idle_weather"
 STATE_IDLE_HOLDING = "idle_holding"
 STATE_RATE_LIMIT = "rate_limit"
 STATE_API_ERROR = "api_error"
+LOGGER = logging.getLogger("pixoo_radar")
+
+
+def _configure_logging() -> None:
+    """Configure app logging with standard Python logging."""
+    level_name = str(LOG_LEVEL).upper()
+    level = getattr(logging, level_name, logging.INFO)
+    if not LOG_VERBOSE_EVENTS and level < logging.WARNING:
+        level = logging.WARNING
+
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
 
 def _measure_text_width(text: str) -> int:
@@ -202,11 +222,11 @@ def _format_flight_level(altitude_ft: int) -> str:
 def _format_speed(speed_kts: int) -> str:
     """Format ground speed using configured unit."""
     if speed_kts is None:
-        return "---MPH" if FLIGHT_SPEED_UNIT.lower() == "mph" else "---KT"
+        return "---Mph" if FLIGHT_SPEED_UNIT.lower() == "mph" else "---Kt"
     if FLIGHT_SPEED_UNIT.lower() == "mph":
         speed_mph = int(round(float(speed_kts) * 1.15078))
-        return f"{speed_mph}MPH"
-    return f"{int(round(float(speed_kts)))}KT"
+        return f"{speed_mph}Mph"
+    return f"{int(round(float(speed_kts)))}Kt"
 
 
 def _format_heading(heading: int) -> str:
@@ -229,12 +249,19 @@ def _format_humidity(humidity_pct) -> str:
 
 
 def _format_wind_kph(wind_kph) -> str:
+    wind_unit = WEATHER_WIND_SPEED_UNIT.lower()
+    use_mph = wind_unit == "mph"
+    # Keep backward compatibility for older 'kph' config values.
+    use_kmh = wind_unit in ("kmh", "kph")
+
     if wind_kph is None:
-        return "-- Mph" if WEATHER_WIND_SPEED_UNIT.lower() == "mph" else "-- Kph"
-    if WEATHER_WIND_SPEED_UNIT.lower() == "mph":
+        return "-- Mph" if use_mph else "-- Kmh"
+    if use_mph:
         wind_mph = int(round(float(wind_kph) * 0.621371))
         return f"{wind_mph} Mph"
-    return f"{int(round(float(wind_kph)))} Kph"
+    if use_kmh:
+        return f"{int(round(float(wind_kph)))} Kmh"
+    return f"{int(round(float(wind_kph)))} Kmh"
 
 
 def _format_wind_dir(wind_dir_deg) -> str:
@@ -387,7 +414,7 @@ def _build_and_send_animation(pizzoo: Pizzoo, data: dict) -> None:
         if frame_idx < TOTAL_FRAMES - 1:
             pizzoo.add_frame()
 
-    print(f"Sending {TOTAL_FRAMES} frames to device (frame speed: {ANIMATION_FRAME_SPEED}ms)...")
+    LOGGER.info("Sending %s flight frames to device (frame speed: %sms).", TOTAL_FRAMES, ANIMATION_FRAME_SPEED)
     pizzoo.render(frame_speed=ANIMATION_FRAME_SPEED)
 
 
@@ -399,7 +426,7 @@ def _build_and_send_holding_screen(pizzoo: Pizzoo, status: str = "NO FLIGHTS") -
     pizzoo.cls()
     _draw_top_section(pizzoo, logo="", origin="---", destination="---", airline_name=status, y_route=20)
     _draw_info_page(pizzoo, ("STATUS", status[:10]), ("RANGE", range_text))
-    print("Sending holding screen (no active flight)...")
+    LOGGER.info("Sending holding screen (%s).", status)
     pizzoo.render(frame_speed=ANIMATION_FRAME_SPEED)
 
 
@@ -428,7 +455,7 @@ def _build_and_send_weather_idle_screen(pizzoo: Pizzoo, weather: dict) -> None:
     runway_heading_deg = float(RUNWAY_HEADING_DEG)
     pizzoo.add_frame()
     _draw_runway_wind_diagram(pizzoo, wind_dir_deg=wind_dir_deg, runway_heading_deg=runway_heading_deg)
-    print("Sending weather idle screen...")
+    LOGGER.info("Sending weather idle screen (2 frames, %ss per frame).", WEATHER_VIEW_SECONDS)
     pizzoo.render(frame_speed=max(500, int(WEATHER_VIEW_SECONDS * 1000)))
 
 
@@ -436,20 +463,29 @@ def _connect_pixoo_with_retry() -> Pizzoo:
     """Connect to Pixoo and keep retrying until available."""
     while True:
         try:
-            print(f"Connecting to Pixoo at {PIXOO_IP}...")
+            LOGGER.info("Connecting to Pixoo at %s:%s...", PIXOO_IP, PIXOO_PORT)
             pixoo = Pizzoo(PIXOO_IP, debug=True)
             pixoo.load_font(FONT_NAME, FONT_PATH)
-            print("Pixoo connected.")
+            LOGGER.info("Pixoo connected.")
             return pixoo
         except Exception as exc:
-            print(
-                f"Pixoo unavailable ({exc}). Retrying in {PIXOO_RECONNECT_SECONDS}s..."
-            )
+            LOGGER.warning("Pixoo unavailable (%s). Retrying in %ss...", exc, PIXOO_RECONNECT_SECONDS)
             sleep(PIXOO_RECONNECT_SECONDS)
+
+
+def _is_pixoo_reachable(timeout_seconds: float = 2.0) -> bool:
+    """Return True when Pixoo host:port is reachable over TCP."""
+    try:
+        with socket.create_connection((PIXOO_IP, PIXOO_PORT), timeout=timeout_seconds):
+            return True
+    except OSError:
+        return False
 
 
 def main():
     """Main function to run the flight tracker display."""
+    _configure_logging()
+    LOGGER.info("Starting Pixoo Radar.")
     parser = argparse.ArgumentParser(description="Pixoo Flight Tracker Display")
     parser.add_argument("--caffeinate", action="store_true",
                         help="Prevent macOS from sleeping while the tracker runs")
@@ -469,6 +505,16 @@ def main():
     no_data_retry_seconds = NO_FLIGHT_RETRY_SECONDS
 
     while True:
+        LOGGER.info("Starting polling cycle.")
+        if not _is_pixoo_reachable():
+            LOGGER.warning("Pixoo offline; pausing flight/weather API updates until reconnect succeeds.")
+            pixoo = _connect_pixoo_with_retry()
+            current_state = None
+            current_flight_id = None
+            no_data_retry_seconds = NO_FLIGHT_RETRY_SECONDS
+            continue
+
+        LOGGER.info("Fetching closest flight data.")
         data = fd.get_closest_flight_data(LATITUDE, LONGITUDE)
         cooldown_remaining = fd.get_api_cooldown_remaining()
         api_error = fd.get_last_api_error()
@@ -478,21 +524,21 @@ def main():
             current_state = STATE_FLIGHT_ACTIVE
             new_flight_id = data.get("icao24")
             if new_flight_id == current_flight_id:
-                print(f"Still tracking: {data.get('flight_number')} — animation unchanged")
+                LOGGER.info("Still tracking %s; animation unchanged.", data.get("flight_number"))
                 sleep(DATA_REFRESH_SECONDS)
                 continue
 
             current_flight_id = new_flight_id
-            print(f"New flight: {data.get('flight_number')} ({data.get('origin')} -> {data.get('destination')})")
+            LOGGER.info("New flight: %s (%s -> %s).", data.get("flight_number"), data.get("origin"), data.get("destination"))
             try:
                 _build_and_send_animation(pizzoo, data)
             except Exception as exc:
-                print(f"Lost Pixoo connection while rendering flight view ({exc}).")
+                LOGGER.error("Lost Pixoo connection while rendering flight view (%s).", exc)
                 pizzoo = _connect_pixoo_with_retry()
                 current_state = None
                 current_flight_id = None
                 continue
-            print(f"Animation playing. Next check in {DATA_REFRESH_SECONDS}s...")
+            LOGGER.info("Animation playing. Next check in %ss.", DATA_REFRESH_SECONDS)
             sleep(DATA_REFRESH_SECONDS)
             continue
 
@@ -505,6 +551,8 @@ def main():
             target_state = STATE_IDLE_WEATHER
         else:
             target_state = STATE_IDLE_HOLDING
+        if target_state != current_state:
+            LOGGER.info("State transition: %s -> %s", current_state, target_state)
 
         if target_state != current_state:
             current_flight_id = None
@@ -514,13 +562,13 @@ def main():
                 if refreshed:
                     weather_error = wx.get_last_error()
                     if weather_error:
-                        print(f"Weather refresh failed ({weather_error}); using cached/fallback weather data.")
+                        LOGGER.warning("Weather refresh failed (%s); using cached/fallback weather data.", weather_error)
                     else:
-                        print(f"Weather updated from API ({weather_payload.get('source', 'unknown source')}).")
+                        LOGGER.info("Weather updated from API (%s).", weather_payload.get("source", "unknown source"))
                 try:
                     _build_and_send_weather_idle_screen(pizzoo, weather_payload)
                 except Exception as exc:
-                    print(f"Lost Pixoo connection while rendering weather view ({exc}).")
+                    LOGGER.error("Lost Pixoo connection while rendering weather view (%s).", exc)
                     pizzoo = _connect_pixoo_with_retry()
                     current_state = None
                     current_flight_id = None
@@ -529,7 +577,7 @@ def main():
                 try:
                     _build_and_send_holding_screen(pizzoo, status="RATE LIMIT")
                 except Exception as exc:
-                    print(f"Lost Pixoo connection while rendering holding view ({exc}).")
+                    LOGGER.error("Lost Pixoo connection while rendering holding view (%s).", exc)
                     pizzoo = _connect_pixoo_with_retry()
                     current_state = None
                     current_flight_id = None
@@ -538,7 +586,7 @@ def main():
                 try:
                     _build_and_send_holding_screen(pizzoo, status="API ERROR")
                 except Exception as exc:
-                    print(f"Lost Pixoo connection while rendering holding view ({exc}).")
+                    LOGGER.error("Lost Pixoo connection while rendering holding view (%s).", exc)
                     pizzoo = _connect_pixoo_with_retry()
                     current_state = None
                     current_flight_id = None
@@ -547,7 +595,7 @@ def main():
                 try:
                     _build_and_send_holding_screen(pizzoo, status="NO FLIGHTS")
                 except Exception as exc:
-                    print(f"Lost Pixoo connection while rendering holding view ({exc}).")
+                    LOGGER.error("Lost Pixoo connection while rendering holding view (%s).", exc)
                     pizzoo = _connect_pixoo_with_retry()
                     current_state = None
                     current_flight_id = None
@@ -558,13 +606,13 @@ def main():
             if refreshed:
                 weather_error = wx.get_last_error()
                 if weather_error:
-                    print(f"Weather refresh failed ({weather_error}); using cached/fallback weather data.")
+                    LOGGER.warning("Weather refresh failed (%s); using cached/fallback weather data.", weather_error)
                 else:
-                    print(f"Weather updated from API ({weather_payload.get('source', 'unknown source')}).")
+                    LOGGER.info("Weather updated from API (%s).", weather_payload.get("source", "unknown source"))
                 try:
                     _build_and_send_weather_idle_screen(pizzoo, weather_payload)
                 except Exception as exc:
-                    print(f"Lost Pixoo connection while rendering weather view ({exc}).")
+                    LOGGER.error("Lost Pixoo connection while rendering weather view (%s).", exc)
                     pizzoo = _connect_pixoo_with_retry()
                     current_state = None
                     current_flight_id = None
@@ -572,11 +620,11 @@ def main():
 
         if target_state == STATE_RATE_LIMIT:
             if cooldown_remaining > 0:
-                print(f"FlightRadar24 rate limit active, retrying in {retry_seconds}s...")
+                LOGGER.warning("FlightRadar24 rate limit active, retrying in %ss.", retry_seconds)
         elif target_state == STATE_API_ERROR:
-            print(f"Flight API error, retrying in {retry_seconds}s...")
+            LOGGER.warning("Flight API error, retrying in %ss.", retry_seconds)
         else:
-            print(f"No flight data available, retrying in {retry_seconds}s...")
+            LOGGER.info("No flight data available, retrying in %ss.", retry_seconds)
 
         sleep(retry_seconds)
         no_data_retry_seconds = min(no_data_retry_seconds * 2, NO_FLIGHT_MAX_RETRY_SECONDS)
