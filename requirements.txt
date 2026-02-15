@@ -3,3 +3,4 @@ Pillow
 requests
 FlightRadarAPI
 beautifulsoup4
+openmeteo-requests
