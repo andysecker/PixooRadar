@@ -35,6 +35,7 @@ from config import (
     COLOR_TEXT,
     DATA_REFRESH_SECONDS,
     FLIGHT_SEARCH_RADIUS_METERS,
+    FLIGHT_SPEED_UNIT,
     FONT_NAME,
     FONT_PATH,
     LATITUDE,
@@ -44,9 +45,10 @@ from config import (
     NO_FLIGHT_MAX_RETRY_SECONDS,
     NO_FLIGHT_RETRY_SECONDS,
     PIXOO_IP,
-    RUNWAY_HEADINGS_DEG,
+    RUNWAY_HEADING_DEG,
     WEATHER_REFRESH_SECONDS,
     WEATHER_VIEW_SECONDS,
+    WEATHER_WIND_SPEED_UNIT,
 )
 from flight_data import FlightData
 from weather_data import WeatherData
@@ -75,6 +77,7 @@ AIRPLANE_CYCLE = ROUTE_WIDTH + PLANE_WIDTH  # 27 frames per airplane loop
 # since each frame is a separate HTTP request. Info pages: 27 / 3 = 9 frames per page.
 # At 400ms per frame: ~3.6s per page, ~10.8s full cycle.
 TOTAL_FRAMES = AIRPLANE_CYCLE  # 27
+
 
 STATE_FLIGHT_ACTIVE = "flight_active"
 STATE_IDLE_WEATHER = "idle_weather"
@@ -196,10 +199,13 @@ def _format_flight_level(altitude_ft: int) -> str:
 
 
 def _format_speed(speed_kts: int) -> str:
-    """Format ground speed with KT suffix."""
+    """Format ground speed using configured unit."""
     if speed_kts is None:
-        return "---KT"
-    return f"{speed_kts}KT"
+        return "---MPH" if FLIGHT_SPEED_UNIT.lower() == "mph" else "---KT"
+    if FLIGHT_SPEED_UNIT.lower() == "mph":
+        speed_mph = int(round(float(speed_kts) * 1.15078))
+        return f"{speed_mph}MPH"
+    return f"{int(round(float(speed_kts)))}KT"
 
 
 def _format_heading(heading: int) -> str:
@@ -223,13 +229,16 @@ def _format_humidity(humidity_pct) -> str:
 
 def _format_wind_kph(wind_kph) -> str:
     if wind_kph is None:
-        return "--K"
-    return f"{int(round(wind_kph))}K"
+        return "--Mph" if WEATHER_WIND_SPEED_UNIT.lower() == "mph" else "--Kph"
+    if WEATHER_WIND_SPEED_UNIT.lower() == "mph":
+        wind_mph = int(round(float(wind_kph) * 0.621371))
+        return f"{wind_mph}Mph"
+    return f"{int(round(float(wind_kph)))}Kph"
 
 
 def _format_wind_dir(wind_dir_deg) -> str:
     if wind_dir_deg is None:
-        return "---"
+        return "--"
     directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
     idx = int((float(wind_dir_deg) + 22.5) // 45) % 8
     return directions[idx]
@@ -298,10 +307,12 @@ def _draw_runway_wind_diagram(pizzoo: Pizzoo, wind_dir_deg, runway_heading_deg: 
 
     # Subtle compass ring
     for b in range(0, 360, 10):
+        if b == 0:
+            continue
         x1, y1 = _bearing_to_xy(cx, cy, b, 28)
         x2, y2 = _bearing_to_xy(cx, cy, b, 30)
         _draw_line(pizzoo, x1, y1, x2, y2, color=COLOR_WX_ACCENT, thickness=1)
-    pizzoo.draw_text("N", xy=(_center_x(64, "N"), 1), font=FONT_NAME, color=COLOR_WX_MUTED)
+    pizzoo.draw_text("N", xy=(_center_x(64, "N"), -1), font=FONT_NAME, color=COLOR_WX_MUTED)
 
     # Runway body
     rx0, ry0 = _bearing_to_xy(cx, cy, runway_heading_deg, runway_half_len)
@@ -404,7 +415,7 @@ def _build_and_send_weather_idle_screen(pizzoo: Pizzoo, weather: dict) -> None:
     pizzoo.cls()
     pizzoo.draw_rectangle(xy=(0, 0), width=64, height=64, color=COLOR_WX_BG, filled=True)
     pizzoo.draw_rectangle(xy=(0, 0), width=64, height=11, color=COLOR_WX_ACCENT, filled=True)
-    pizzoo.draw_text("Weather", xy=(2, 0), font=FONT_NAME, color=COLOR_WX_TEXT)
+    pizzoo.draw_text("Weather", xy=(2, -1), font=FONT_NAME, color=COLOR_WX_TEXT)
     hum_line = _fit_text(f"HUM {humidity}", 10)
     wind_line = _fit_text(f"Wi {wind_dir} {wind}", 10)
     pizzoo.draw_text(temperature, xy=(_center_x(64, temperature), 13), font=FONT_NAME, color=COLOR_WX_TEXT)
@@ -413,7 +424,7 @@ def _build_and_send_weather_idle_screen(pizzoo: Pizzoo, weather: dict) -> None:
     pizzoo.draw_text(wind_line, xy=(_center_x(64, wind_line), 49), font=FONT_NAME, color=COLOR_WX_TEXT)
 
     # Frame 2: diagram-only runway + wind arrow
-    runway_heading_deg = float(RUNWAY_HEADINGS_DEG[0]) if RUNWAY_HEADINGS_DEG else 110.0
+    runway_heading_deg = float(RUNWAY_HEADING_DEG)
     pizzoo.add_frame()
     _draw_runway_wind_diagram(pizzoo, wind_dir_deg=wind_dir_deg, runway_heading_deg=runway_heading_deg)
     print("Sending weather idle screen...")

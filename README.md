@@ -1,107 +1,129 @@
-# Pixoo Flight Tracker
+# Pixoo Radar
 
-A real-time flight tracker display for the Pixoo64 LED matrix. Shows information about the closest aircraft to your location, including airline logo, route, and flight details.
+A state-driven Pixoo64 display that does two jobs:
 
-<img src="display.png" width="50%">
+- `Flight mode`: shows the closest nearby aircraft from FlightRadar24 data.
+- `Idle mode`: when no flights are in range, shows weather views (including a runway wind diagram) or a holding screen.
 
-## Features
+This is no longer the original fork behavior. The app now prioritizes useful always-on output instead of showing stale flight data.
 
-- Displays airline logo (automatically fetched and cached)
-- Shows origin and destination airport codes with animated route indicator
-- Rotating information display:
-  - Flight number and altitude
-  - Aircraft type and registration
-  - Ground speed and heading
-- Automatic data refresh (only updates when a new aircraft is detected)
-- macOS sleep prevention with `--caffeinate` flag
+## What It Shows
+
+### Flight Mode
+- Airline logo (cached locally)
+- Route (`origin -> destination`)
+- Flight number, altitude, aircraft type, registration
+- Ground speed and heading
+- Speed unit configurable (`mph` or `kt`)
+
+### Idle Weather Mode
+Two-frame weather loop (frame duration configurable):
+
+1. Weather summary
+- Temperature
+- Condition
+- Humidity
+- Wind (direction + speed)
+
+2. Runway wind diagram
+- Runway drawn at your configured heading
+- Wind arrow overlaid by current wind direction
+- North marker at top of the compass ring
+
+## Data Sources
+
+- Flight data: `FlightRadarAPI` (community package, unofficial access pattern)
+- Weather data: Open-Meteo via `openmeteo-requests`
+- Destination METAR enrichment: NOAA
 
 ## Requirements
 
 - Python 3.10+
-- Pixoo64 LED display on your local network
-- Internet connection (for FlightRadar24 API)
+- Pixoo64 on your local network
+- Internet access for flight/weather APIs
 
 ## Installation
 
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/chrivoge/PixooRadar.git
-   cd PixooRadar
-   ```
+```bash
+git clone <your-fork-url>
+cd PixooRadar
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-2. Create a virtual environment and install dependencies:
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
+Create your local config:
 
-3. Configure your settings in `config.py` (see Configuration below)
+```bash
+cp config.example.py config.py
+# then edit config.py
+```
 
-4. Run the tracker:
-   ```bash
-   python display_flight_data_pizoo.py
-   ```
+Run:
 
-   To prevent macOS from sleeping while the tracker runs:
-   ```bash
-   python display_flight_data_pizoo.py --caffeinate
-   ```
+```bash
+python display_flight_data_pizoo.py
+```
+
+Optional (macOS):
+
+```bash
+python display_flight_data_pizoo.py --caffeinate
+```
 
 ## Configuration
 
-Edit `config.py` to customize the flight tracker:
+All settings are in `config.py`.
 
-### Device Settings
-```python
-PIXOO_IP = "192.168.x.x"  # Your Pixoo's IP address
-```
+### Device / Location
+- `PIXOO_IP`
+- `LATITUDE`
+- `LONGITUDE`
+- `FLIGHT_SEARCH_RADIUS_METERS`
 
-### Location
-Set your coordinates to track flights overhead:
-```python
-LATITUDE = 52.520    # Your latitude
-LONGITUDE = 13.405   # Your longitude
-```
+### Flight Polling / Backoff
+- `DATA_REFRESH_SECONDS`
+- `NO_FLIGHT_RETRY_SECONDS`
+- `NO_FLIGHT_MAX_RETRY_SECONDS`
+- `API_RATE_LIMIT_COOLDOWN_SECONDS`
 
-### Timing
-```python
-DATA_REFRESH_SECONDS = 60    # How often to check for new flights (seconds)
-ANIMATION_FRAME_SPEED = 300  # Animation frame speed in milliseconds
-```
+### Idle Behavior
+- `IDLE_MODE` (`"weather"` or `"holding"`)
+- `WEATHER_REFRESH_SECONDS`
+- `WEATHER_VIEW_SECONDS`
+- `RUNWAY_HEADING_DEG`
 
-### Colors
-```python
-COLOR_TEXT = "#FFFF00"       # Yellow - main text
-COLOR_ACCENT = "#00BA0F"     # Green - animation accent
-COLOR_BACKGROUND = "#BABABA" # Light gray - background
-COLOR_BOX = "#454545"        # Dark gray - info boxes
-```
+### Units
+- `FLIGHT_SPEED_UNIT` (`"mph"` or `"kt"`)
+- `WEATHER_WIND_SPEED_UNIT` (`"mph"` or `"kph"`)
+
+### Rendering
+- `ANIMATION_FRAME_SPEED`
+- `FONT_NAME`, `FONT_PATH`
+- `LOGO_DIR`
+
+## Runtime Behavior
+
+The app switches display state based on data availability:
+
+- `flight_active`: renders flight animation
+- `idle_weather`: renders two weather views
+- `idle_holding`: renders static holding view
+- `rate_limit`: explicit cooldown view when rate-limited
+- `api_error`: explicit API error view
+
+When no usable flight is available, stale flight content is cleared and replaced by idle output.
 
 ## Project Structure
 
-```
-PixooRadar/
-├── config.py                    # Configuration settings
-├── display_flight_data_pizoo.py # Main display script
-├── flight_data.py               # FlightRadar24 API wrapper
-├── fonts/
-│   └── splitflap.bdf            # BDF font for the display
-├── airline_logos/                # Cached airline logos (auto-created)
-├── requirements.txt
-└── README.md
-```
+- `display_flight_data_pizoo.py` main app + rendering/state machine
+- `flight_data.py` flight retrieval, filtering, logo caching, METAR enrichment
+- `weather_data.py` weather provider and cache
+- `config.py` local runtime configuration (ignored by git)
+- `config.example.py` template for new setups
 
-## How It Works
+## Notes
 
-1. The tracker queries FlightRadar24 for flights within 100km of your location
-2. It finds the closest flight with valid airline information
-3. Flight details are fetched, including airline logo (resized and cached locally)
-4. All animation frames are pre-computed and sent to the Pixoo as a native animation
-5. Data refreshes automatically based on `DATA_REFRESH_SECONDS`, but only re-sends the animation when a different aircraft becomes the closest
-
-## Credits
-
-- [pizzoo](https://github.com/pabletos/pizzoo) - Pixoo display library
-- [FlightRadar24](https://github.com/JeanExtreme002/FlightRadarAPI) - Flight data API
-- NOAA - METAR weather data
+- `config.py` is intended to stay local and untracked.
+- If using a Raspberry Pi, run this under `systemd` or `screen` for 24/7 uptime.
+- Flight API behavior can vary; backoff/cooldown settings are important for long-running stability.

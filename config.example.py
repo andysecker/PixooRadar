@@ -42,10 +42,31 @@ NO_FLIGHT_MAX_RETRY_SECONDS = 120
 # Default cooldown (seconds) when API rate-limit response does not provide Retry-After.
 API_RATE_LIMIT_COOLDOWN_SECONDS = 300
 
+# Idle mode shown when no flights are in range.
+# Current options: "weather" or "holding"
+IDLE_MODE = "weather"
+
+# Weather refresh interval while in idle weather mode (seconds).
+# 900s = 15 minutes.
+WEATHER_REFRESH_SECONDS = 900
+
+# Seconds to show each weather frame before advancing (used for weather GIF views).
+WEATHER_VIEW_SECONDS = 10
+
+# Primary runway heading (degrees) for idle weather runway-wind view.
+# The reciprocal direction is implied automatically.
+RUNWAY_HEADING_DEG = 110
+
 # Animation frame speed in milliseconds (how fast the airplane moves)
 # Higher = slower airplane but longer per info page
 # At 400ms × 9 frames per page = ~3.6s per page, ~10.8s full cycle
 ANIMATION_FRAME_SPEED = 300
+
+# Flight speed display unit: "mph" or "kt"
+FLIGHT_SPEED_UNIT = "mph"
+
+# Weather wind speed display unit: "mph" or "kph"
+WEATHER_WIND_SPEED_UNIT = "mph"
 
 # =============================================================================
 # Colors
