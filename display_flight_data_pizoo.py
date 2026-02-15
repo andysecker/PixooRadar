@@ -45,6 +45,7 @@ from config import (
     NO_FLIGHT_MAX_RETRY_SECONDS,
     NO_FLIGHT_RETRY_SECONDS,
     PIXOO_IP,
+    PIXOO_RECONNECT_SECONDS,
     RUNWAY_HEADING_DEG,
     WEATHER_REFRESH_SECONDS,
     WEATHER_VIEW_SECONDS,
@@ -431,6 +432,22 @@ def _build_and_send_weather_idle_screen(pizzoo: Pizzoo, weather: dict) -> None:
     pizzoo.render(frame_speed=max(500, int(WEATHER_VIEW_SECONDS * 1000)))
 
 
+def _connect_pixoo_with_retry() -> Pizzoo:
+    """Connect to Pixoo and keep retrying until available."""
+    while True:
+        try:
+            print(f"Connecting to Pixoo at {PIXOO_IP}...")
+            pixoo = Pizzoo(PIXOO_IP, debug=True)
+            pixoo.load_font(FONT_NAME, FONT_PATH)
+            print("Pixoo connected.")
+            return pixoo
+        except Exception as exc:
+            print(
+                f"Pixoo unavailable ({exc}). Retrying in {PIXOO_RECONNECT_SECONDS}s..."
+            )
+            sleep(PIXOO_RECONNECT_SECONDS)
+
+
 def main():
     """Main function to run the flight tracker display."""
     parser = argparse.ArgumentParser(description="Pixoo Flight Tracker Display")
@@ -443,10 +460,9 @@ def main():
             ["caffeinate", "-i", sys.executable, os.path.abspath(__file__)]
         ))
 
-    pizzoo = Pizzoo(PIXOO_IP, debug=True)
+    pizzoo = _connect_pixoo_with_retry()
     fd = FlightData(save_logo_dir=LOGO_DIR)
     wx = WeatherData(latitude=LATITUDE, longitude=LONGITUDE, refresh_seconds=WEATHER_REFRESH_SECONDS)
-    pizzoo.load_font(FONT_NAME, FONT_PATH)
 
     current_state = None
     current_flight_id = None
@@ -468,7 +484,14 @@ def main():
 
             current_flight_id = new_flight_id
             print(f"New flight: {data.get('flight_number')} ({data.get('origin')} -> {data.get('destination')})")
-            _build_and_send_animation(pizzoo, data)
+            try:
+                _build_and_send_animation(pizzoo, data)
+            except Exception as exc:
+                print(f"Lost Pixoo connection while rendering flight view ({exc}).")
+                pizzoo = _connect_pixoo_with_retry()
+                current_state = None
+                current_flight_id = None
+                continue
             print(f"Animation playing. Next check in {DATA_REFRESH_SECONDS}s...")
             sleep(DATA_REFRESH_SECONDS)
             continue
@@ -494,13 +517,41 @@ def main():
                         print(f"Weather refresh failed ({weather_error}); using cached/fallback weather data.")
                     else:
                         print(f"Weather updated from API ({weather_payload.get('source', 'unknown source')}).")
-                _build_and_send_weather_idle_screen(pizzoo, weather_payload)
+                try:
+                    _build_and_send_weather_idle_screen(pizzoo, weather_payload)
+                except Exception as exc:
+                    print(f"Lost Pixoo connection while rendering weather view ({exc}).")
+                    pizzoo = _connect_pixoo_with_retry()
+                    current_state = None
+                    current_flight_id = None
+                    continue
             elif target_state == STATE_RATE_LIMIT:
-                _build_and_send_holding_screen(pizzoo, status="RATE LIMIT")
+                try:
+                    _build_and_send_holding_screen(pizzoo, status="RATE LIMIT")
+                except Exception as exc:
+                    print(f"Lost Pixoo connection while rendering holding view ({exc}).")
+                    pizzoo = _connect_pixoo_with_retry()
+                    current_state = None
+                    current_flight_id = None
+                    continue
             elif target_state == STATE_API_ERROR:
-                _build_and_send_holding_screen(pizzoo, status="API ERROR")
+                try:
+                    _build_and_send_holding_screen(pizzoo, status="API ERROR")
+                except Exception as exc:
+                    print(f"Lost Pixoo connection while rendering holding view ({exc}).")
+                    pizzoo = _connect_pixoo_with_retry()
+                    current_state = None
+                    current_flight_id = None
+                    continue
             else:
-                _build_and_send_holding_screen(pizzoo, status="NO FLIGHTS")
+                try:
+                    _build_and_send_holding_screen(pizzoo, status="NO FLIGHTS")
+                except Exception as exc:
+                    print(f"Lost Pixoo connection while rendering holding view ({exc}).")
+                    pizzoo = _connect_pixoo_with_retry()
+                    current_state = None
+                    current_flight_id = None
+                    continue
             current_state = target_state
         elif target_state == STATE_IDLE_WEATHER:
             weather_payload, refreshed = wx.get_current()
@@ -510,7 +561,14 @@ def main():
                     print(f"Weather refresh failed ({weather_error}); using cached/fallback weather data.")
                 else:
                     print(f"Weather updated from API ({weather_payload.get('source', 'unknown source')}).")
-                _build_and_send_weather_idle_screen(pizzoo, weather_payload)
+                try:
+                    _build_and_send_weather_idle_screen(pizzoo, weather_payload)
+                except Exception as exc:
+                    print(f"Lost Pixoo connection while rendering weather view ({exc}).")
+                    pizzoo = _connect_pixoo_with_retry()
+                    current_state = None
+                    current_flight_id = None
+                    continue
 
         if target_state == STATE_RATE_LIMIT:
             if cooldown_remaining > 0:

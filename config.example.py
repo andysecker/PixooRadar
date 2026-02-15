@@ -9,6 +9,8 @@ Modify these values to customize the flight tracker for your setup.
 # =============================================================================
 PIXOO_IP = "192.168.x.x"   # Replace with your Pixoo's IP address
 PIXOO_PORT = 80
+# Reconnect delay (seconds) when Pixoo is unreachable or drops from network.
+PIXOO_RECONNECT_SECONDS = 60
 
 # =============================================================================
 # Location for Flight Tracking

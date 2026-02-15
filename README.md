@@ -77,6 +77,7 @@ All settings are in `config.py`.
 
 ### Device / Location
 - `PIXOO_IP`
+- `PIXOO_RECONNECT_SECONDS`
 - `LATITUDE`
 - `LONGITUDE`
 - `FLIGHT_SEARCH_RADIUS_METERS`
@@ -117,6 +118,11 @@ When no usable flight is available, stale flight content is cleared and replaced
 Weather refresh logging is explicit:
 - `Weather updated from API (...)` when new weather is fetched successfully.
 - `Weather refresh failed (...); using cached/fallback weather data.` when provider calls fail.
+
+Pixoo reconnect logging is explicit:
+- `Connecting to Pixoo at ...` on connect attempts.
+- `Pixoo unavailable (...). Retrying in ...s...` while offline.
+- `Lost Pixoo connection while rendering ...` when connection drops mid-run.
 
 ## Project Structure
 
