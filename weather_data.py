@@ -1,6 +1,10 @@
 """Weather data provider for idle display mode (Open-Meteo)."""
 
+import logging
 from time import monotonic
+
+
+LOGGER = logging.getLogger("pixoo_radar.weather")
 
 
 class WeatherData:
@@ -60,15 +64,19 @@ class WeatherData:
         refreshed = True
         try:
             raw = self.provider(self.latitude, self.longitude)
+            LOGGER.info("Weather API raw payload: %s", raw)
             payload = self._normalize(raw)
+            LOGGER.info("Weather API normalized payload: %s", payload)
             if payload:
                 self._cache = payload
                 self._cache_at = now
                 self._last_error = None
                 return self._cache, refreshed
             self._last_error = "Weather provider returned no data"
+            LOGGER.warning("Weather provider returned no data payload after normalization.")
         except Exception as exc:  # noqa: BLE001
             self._last_error = f"Weather provider error: {exc}"
+            LOGGER.warning("Weather API fetch failed: %s", exc)
 
         if self._cache:
             return self._cache, False

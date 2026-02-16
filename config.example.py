@@ -28,6 +28,10 @@ FLIGHT_SEARCH_RADIUS_METERS = 50000
 # =============================================================================
 FONT_NAME = "splitflap"
 FONT_PATH = "./fonts/splitflap.bdf"
+# Optional micro font for active runway label on weather runway diagram.
+# Set equal to FONT_NAME/FONT_PATH to disable separate runway-label font.
+RUNWAY_LABEL_FONT_NAME = "splitflap"
+RUNWAY_LABEL_FONT_PATH = "./fonts/splitflap.bdf"
 LOGO_DIR = "airline_logos"
 
 # =============================================================================

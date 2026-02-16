@@ -20,6 +20,7 @@ Configuration:
 """
 
 import argparse
+import config as app_config
 import logging
 import os
 import socket
@@ -71,6 +72,7 @@ COLOR_WX_MUTED = "#A8C7DE"        # Weather muted text
 COLOR_RWY = "#111111"             # Runway asphalt
 COLOR_RWY_MARK = "#EDEDED"        # Runway markings
 COLOR_WIND_ARROW = "#FFD166"      # Wind arrow (high-contrast amber)
+COLOR_ACTIVE_RWY_ARROW = "#7CFC8A"  # Aircraft direction along active runway
 
 # Airplane animation constants
 PLANE_WIDTH = 5
@@ -91,6 +93,8 @@ STATE_IDLE_HOLDING = "idle_holding"
 STATE_RATE_LIMIT = "rate_limit"
 STATE_API_ERROR = "api_error"
 LOGGER = logging.getLogger("pixoo_radar")
+RUNWAY_LABEL_FONT_NAME = getattr(app_config, "RUNWAY_LABEL_FONT_NAME", FONT_NAME)
+RUNWAY_LABEL_FONT_PATH = getattr(app_config, "RUNWAY_LABEL_FONT_PATH", FONT_PATH)
 
 
 def _configure_logging() -> None:
@@ -348,6 +352,73 @@ def _draw_runway_wind_diagram(pizzoo: Pizzoo, wind_dir_deg, runway_heading_deg: 
     _draw_line(pizzoo, rx0, ry0, rx1, ry1, color=COLOR_RWY, thickness=7)
     _draw_line(pizzoo, rx0, ry0, rx1, ry1, color=COLOR_RWY_MARK, thickness=1)
 
+    # Determine active runway heading (aircraft depart/land into wind).
+    if wind_dir_deg is not None:
+        wind_from = float(wind_dir_deg) % 360.0
+        reciprocal_heading = (runway_heading_deg + 180.0) % 360.0
+        diff_base = abs(_signed_angle_diff_deg(wind_from, runway_heading_deg))
+        diff_recip = abs(_signed_angle_diff_deg(wind_from, reciprocal_heading))
+        active_heading = runway_heading_deg if diff_base <= diff_recip else reciprocal_heading
+
+        # Draw aircraft-direction arrow from the active runway start threshold
+        # toward the active heading. This keeps it separated from the wind
+        # arrow when wind aligns with runway heading.
+        if active_heading == runway_heading_deg:
+            ax0, ay0 = rx1, ry1
+        else:
+            ax0, ay0 = rx0, ry0
+        ax1, ay1 = _bearing_to_xy(ax0, ay0, active_heading, 11)
+        _draw_line(pizzoo, ax0, ay0, ax1, ay1, color=COLOR_ACTIVE_RWY_ARROW, thickness=2)
+
+        # Slightly open head angle for readability while keeping original look.
+        left = (active_heading + 142.0) % 360.0
+        right = (active_heading - 142.0) % 360.0
+        hx0, hy0 = _bearing_to_xy(ax1, ay1, left, 3)
+        hx1, hy1 = _bearing_to_xy(ax1, ay1, right, 3)
+        _draw_line(pizzoo, ax1, ay1, hx0, hy0, color=COLOR_ACTIVE_RWY_ARROW, thickness=1)
+        _draw_line(pizzoo, ax1, ay1, hx1, hy1, color=COLOR_ACTIVE_RWY_ARROW, thickness=1)
+
+        # Active runway designator beside the green arrow, offset outside runway body.
+        active_rwy = _runway_designator(active_heading)
+        label_w = _measure_text_width(active_rwy)
+        label_h = 7
+
+        # Geometry-aware placement: score candidate positions by clearance from
+        # the angled runway centerline, then prefer candidates nearest arrow midpoint.
+        rwy_rad = radians(float(runway_heading_deg) % 360.0)
+        ux, uy = sin(rwy_rad), -cos(rwy_rad)     # Runway unit vector
+        nx, ny = uy, -ux                         # Perpendicular unit vector
+        anchor_x = (ax0 + ax1) / 2.0
+        anchor_y = (ay0 + ay1) / 2.0
+
+        best = None
+        for side in (1, -1):
+            for n_off in (7, 9, 11):
+                for u_off in (-3, 0, 3):
+                    lx = anchor_x + side * n_off * nx + u_off * ux
+                    ly = anchor_y + side * n_off * ny + u_off * uy
+                    tx = int(round(lx - (label_w / 2)))
+                    ty = int(round(ly - (label_h / 2)))
+                    tx = max(0, min(64 - label_w, tx))
+                    ty = max(0, min(64 - label_h, ty))
+
+                    corners = (
+                        (tx, ty),
+                        (tx + label_w - 1, ty),
+                        (tx, ty + label_h - 1),
+                        (tx + label_w - 1, ty + label_h - 1),
+                    )
+                    clearance = min(abs((px - cx) * nx + (py - cy) * ny) for px, py in corners)
+                    anchor_dist = abs((tx + (label_w / 2)) - anchor_x) + abs((ty + (label_h / 2)) - anchor_y)
+                    score = (clearance, -anchor_dist)
+                    if best is None or score > best[0]:
+                        best = (score, tx, ty)
+
+        _, tx, ty = best
+        tx = max(0, min(64 - label_w, tx - 2))
+        ty = max(0, min(64 - label_h, ty + 1))
+        pizzoo.draw_text(active_rwy, xy=(tx, ty), font=RUNWAY_LABEL_FONT_NAME, color=COLOR_ACTIVE_RWY_ARROW)
+
     # Wind arrow: meteorological direction means "from", so arrow points toward center.
     if wind_dir_deg is not None:
         wind_from = float(wind_dir_deg) % 360.0
@@ -460,6 +531,17 @@ def _build_and_send_weather_idle_screen(pizzoo: Pizzoo, weather: dict) -> None:
     pizzoo.render(frame_speed=max(500, int(WEATHER_VIEW_SECONDS * 1000)))
 
 
+def _flight_render_signature(data: dict) -> tuple:
+    """Signature of dynamic fields currently shown in flight view."""
+    return (
+        data.get("icao24"),
+        int(round(float(data.get("altitude") or 0))),
+        int(round(float(data.get("ground_speed") or 0))),
+        int(round(float(data.get("heading") or 0))),
+        str(data.get("status") or ""),
+    )
+
+
 def _connect_pixoo_with_retry() -> Pizzoo:
     """Connect to Pixoo and keep retrying until available."""
     while True:
@@ -467,6 +549,14 @@ def _connect_pixoo_with_retry() -> Pizzoo:
             LOGGER.info("Connecting to Pixoo at %s:%s...", PIXOO_IP, PIXOO_PORT)
             pixoo = Pizzoo(PIXOO_IP, debug=True)
             pixoo.load_font(FONT_NAME, FONT_PATH)
+            if RUNWAY_LABEL_FONT_NAME != FONT_NAME or RUNWAY_LABEL_FONT_PATH != FONT_PATH:
+                try:
+                    pixoo.load_font(RUNWAY_LABEL_FONT_NAME, RUNWAY_LABEL_FONT_PATH)
+                except Exception as exc:
+                    raise RuntimeError(
+                        f"Failed to load runway label font '{RUNWAY_LABEL_FONT_NAME}' "
+                        f"from '{RUNWAY_LABEL_FONT_PATH}': {exc}"
+                    ) from exc
             LOGGER.info("Pixoo connected.")
             return pixoo
         except Exception as exc:
@@ -503,15 +593,17 @@ def main():
 
     current_state = None
     current_flight_id = None
+    current_flight_signature = None
     no_data_retry_seconds = NO_FLIGHT_RETRY_SECONDS
 
     while True:
         LOGGER.info("Starting polling cycle.")
         if not _is_pixoo_reachable():
             LOGGER.warning("Pixoo offline; pausing flight/weather API updates until reconnect succeeds.")
-            pixoo = _connect_pixoo_with_retry()
+            pizzoo = _connect_pixoo_with_retry()
             current_state = None
             current_flight_id = None
+            current_flight_signature = None
             no_data_retry_seconds = NO_FLIGHT_RETRY_SECONDS
             continue
 
@@ -524,12 +616,16 @@ def main():
             no_data_retry_seconds = NO_FLIGHT_RETRY_SECONDS
             current_state = STATE_FLIGHT_ACTIVE
             new_flight_id = data.get("icao24")
+            new_signature = _flight_render_signature(data)
             if new_flight_id == current_flight_id:
-                LOGGER.info("Still tracking %s; animation unchanged.", data.get("flight_number"))
-                sleep(DATA_REFRESH_SECONDS)
-                continue
+                if new_signature == current_flight_signature:
+                    LOGGER.info("Still tracking %s; telemetry unchanged.", data.get("flight_number"))
+                    sleep(DATA_REFRESH_SECONDS)
+                    continue
+                LOGGER.info("Still tracking %s; telemetry changed, updating animation.", data.get("flight_number"))
 
             current_flight_id = new_flight_id
+            current_flight_signature = new_signature
             LOGGER.info("New flight: %s (%s -> %s).", data.get("flight_number"), data.get("origin"), data.get("destination"))
             try:
                 _build_and_send_animation(pizzoo, data)
@@ -538,6 +634,7 @@ def main():
                 pizzoo = _connect_pixoo_with_retry()
                 current_state = None
                 current_flight_id = None
+                current_flight_signature = None
                 continue
             LOGGER.info("Animation playing. Next check in %ss.", DATA_REFRESH_SECONDS)
             sleep(DATA_REFRESH_SECONDS)
@@ -557,6 +654,7 @@ def main():
 
         if target_state != current_state:
             current_flight_id = None
+            current_flight_signature = None
             if target_state == STATE_IDLE_WEATHER:
                 force_refresh = current_state == STATE_FLIGHT_ACTIVE
                 weather_payload, refreshed = wx.get_current_with_options(force_refresh=force_refresh)
@@ -573,6 +671,7 @@ def main():
                     pizzoo = _connect_pixoo_with_retry()
                     current_state = None
                     current_flight_id = None
+                    current_flight_signature = None
                     continue
             elif target_state == STATE_RATE_LIMIT:
                 try:
@@ -582,6 +681,7 @@ def main():
                     pizzoo = _connect_pixoo_with_retry()
                     current_state = None
                     current_flight_id = None
+                    current_flight_signature = None
                     continue
             elif target_state == STATE_API_ERROR:
                 try:
@@ -591,6 +691,7 @@ def main():
                     pizzoo = _connect_pixoo_with_retry()
                     current_state = None
                     current_flight_id = None
+                    current_flight_signature = None
                     continue
             else:
                 try:
@@ -600,6 +701,7 @@ def main():
                     pizzoo = _connect_pixoo_with_retry()
                     current_state = None
                     current_flight_id = None
+                    current_flight_signature = None
                     continue
             current_state = target_state
         elif target_state == STATE_IDLE_WEATHER:
@@ -617,6 +719,7 @@ def main():
                     pizzoo = _connect_pixoo_with_retry()
                     current_state = None
                     current_flight_id = None
+                    current_flight_signature = None
                     continue
 
         if target_state == STATE_RATE_LIMIT:

@@ -28,6 +28,8 @@ Two-frame weather loop (frame duration configurable):
 2. Runway wind diagram
 - Runway drawn at your configured heading
 - Wind arrow overlaid by current wind direction
+- Active runway direction arrow (green), selected from wind/runway alignment
+- Active runway designator label near the green arrow (supports optional micro-font)
 - North marker at top of the compass ring
 
 ## Data Sources
@@ -96,11 +98,12 @@ All settings are in `config.py`.
 
 ### Units
 - `FLIGHT_SPEED_UNIT` (`"mph"` or `"kt"`)
-- `WEATHER_WIND_SPEED_UNIT` (`"mph"` or `"kph"`)
+- `WEATHER_WIND_SPEED_UNIT` (`"mph"` or `"kmh"`, legacy `"kph"` still accepted)
 
 ### Rendering
 - `ANIMATION_FRAME_SPEED`
 - `FONT_NAME`, `FONT_PATH`
+- `RUNWAY_LABEL_FONT_NAME`, `RUNWAY_LABEL_FONT_PATH` (optional separate font for runway label)
 - `LOGO_DIR`
 
 ### Logging
@@ -122,6 +125,11 @@ When no usable flight is available, stale flight content is cleared and replaced
 Weather refresh logging is explicit:
 - `Weather updated from API (...)` when new weather is fetched successfully.
 - `Weather refresh failed (...); using cached/fallback weather data.` when provider calls fail.
+- `Weather API raw payload: ...` and `Weather API normalized payload: ...` on each weather refresh.
+
+Flight refresh behavior:
+- Active-flight rendering now updates when telemetry changes (altitude/speed/heading/status), not only when flight ID changes.
+- Stationary ground targets are filtered out (`altitude<=0` and `ground_speed<=0`) to avoid parked aircraft at gates.
 
 Pixoo reconnect logging is explicit:
 - `Connecting to Pixoo at ...` on connect attempts.

@@ -145,6 +145,16 @@ class FlightData:
             if not getattr(flight, "airline_iata", None):
                 continue
 
+            # Skip stationary ground targets (e.g., aircraft parked at gates with transponders on).
+            try:
+                altitude = float(getattr(flight, "altitude", 0) or 0)
+                ground_speed = float(getattr(flight, "ground_speed", 0) or 0)
+            except (TypeError, ValueError):
+                altitude = 0.0
+                ground_speed = 0.0
+            if altitude <= 0 and ground_speed <= 0:
+                continue
+
             try:
                 dist = self.haversine(lat, lon, flight.latitude, flight.longitude)
             except Exception:
