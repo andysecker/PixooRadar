@@ -56,6 +56,10 @@ IDLE_MODE = "weather"
 # 900s = 15 minutes.
 WEATHER_REFRESH_SECONDS = 900
 
+# ICAO station used for METAR-derived weather values (temperature, dewpoint, wind).
+# Example: "LCPH" (Paphos), "EGLL" (Heathrow), "KJFK" (JFK). Leave blank to disable METAR.
+WEATHER_METAR_ICAO = ""
+
 # Seconds to show each weather frame before advancing (used for weather GIF views).
 WEATHER_VIEW_SECONDS = 10
 

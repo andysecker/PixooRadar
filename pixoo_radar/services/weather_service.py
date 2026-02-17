@@ -3,8 +3,13 @@ from pixoo_radar.models import WeatherSnapshot
 
 
 class WeatherService:
-    def __init__(self, latitude: float, longitude: float, refresh_seconds: int):
-        self._client = WeatherData(latitude=latitude, longitude=longitude, refresh_seconds=refresh_seconds)
+    def __init__(self, latitude: float, longitude: float, refresh_seconds: int, metar_icao: str = ""):
+        self._client = WeatherData(
+            latitude=latitude,
+            longitude=longitude,
+            refresh_seconds=refresh_seconds,
+            metar_icao=metar_icao,
+        )
 
     def get_current(self):
         payload, refreshed = self._client.get_current()

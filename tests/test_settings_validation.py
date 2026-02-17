@@ -65,3 +65,19 @@ def test_validate_settings_rejects_retry_bounds():
     with pytest.raises(ValueError, match="NO_FLIGHT_MAX_RETRY_SECONDS"):
         validate_settings(settings)
 
+
+def test_validate_settings_rejects_invalid_metar_icao():
+    settings = _base_settings()
+    settings = AppSettings(**{**settings.__dict__, "weather_metar_icao": "BAD"})
+    with pytest.raises(ValueError, match="WEATHER_METAR_ICAO"):
+        validate_settings(settings)
+
+
+def test_validate_settings_rejects_missing_metar_dependency_when_icao_set(monkeypatch):
+    import pixoo_radar.settings as settings_module
+
+    monkeypatch.setattr(settings_module, "find_spec", lambda name: None if name == "metar" else object())
+    settings = _base_settings()
+    settings = AppSettings(**{**settings.__dict__, "weather_metar_icao": "LCPH"})
+    with pytest.raises(ValueError, match="dependency 'metar' is not installed"):
+        validate_settings(settings)

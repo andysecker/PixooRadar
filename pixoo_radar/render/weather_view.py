@@ -27,10 +27,27 @@ COLOR_WIND_ARROW = "#FFD166"
 COLOR_ACTIVE_RWY_ARROW = "#7CFC8A"
 
 
-def resolve_active_runway_heading(wind_dir_deg, runway_heading_deg: float) -> float | None:
+def normalize_wind_dir_deg(wind_dir_deg):
     if wind_dir_deg is None:
         return None
-    wind_from = float(wind_dir_deg) % 360.0
+    try:
+        return float(wind_dir_deg) % 360.0
+    except (TypeError, ValueError):
+        return None
+
+
+def nearest_drawn_tick_bearing(wind_dir_deg):
+    wind_dir = normalize_wind_dir_deg(wind_dir_deg)
+    if wind_dir is None:
+        return None
+    tick_bearings = range(10, 360, 10)
+    return min(tick_bearings, key=lambda b: abs(signed_angle_diff_deg(wind_dir, float(b))))
+
+
+def resolve_active_runway_heading(wind_dir_deg, runway_heading_deg: float) -> float | None:
+    wind_from = normalize_wind_dir_deg(wind_dir_deg)
+    if wind_from is None:
+        return None
     reciprocal_heading = (runway_heading_deg + 180.0) % 360.0
     diff_base = abs(signed_angle_diff_deg(wind_from, runway_heading_deg))
     diff_recip = abs(signed_angle_diff_deg(wind_from, reciprocal_heading))
@@ -70,17 +87,26 @@ def choose_runway_label_position(label_w: int, label_h: int, runway_heading_deg:
     return max(0, min(64 - label_w, tx - 2)), max(0, min(64 - label_h, ty + 1))
 
 
-def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg: float) -> None:
+def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg: float, wind_dir_from=None, wind_dir_to=None) -> None:
     cx, cy = 32, 32
     runway_half_len = 22
     pizzoo.draw_rectangle(xy=(0, 0), width=64, height=64, color=COLOR_WX_BG, filled=True)
+
+    highlighted_ticks = set()
+    from_tick = nearest_drawn_tick_bearing(wind_dir_from)
+    to_tick = nearest_drawn_tick_bearing(wind_dir_to)
+    if from_tick is not None:
+        highlighted_ticks.add(from_tick)
+    if to_tick is not None:
+        highlighted_ticks.add(to_tick)
 
     for b in range(0, 360, 10):
         if b == 0:
             continue
         x1, y1 = bearing_to_xy(cx, cy, b, 28)
         x2, y2 = bearing_to_xy(cx, cy, b, 30)
-        draw_line(pizzoo, x1, y1, x2, y2, color=COLOR_WX_ACCENT, thickness=1)
+        tick_color = COLOR_WIND_ARROW if b in highlighted_ticks else COLOR_WX_ACCENT
+        draw_line(pizzoo, x1, y1, x2, y2, color=tick_color, thickness=1)
     pizzoo.draw_text("N", xy=(center_x(64, "N"), -1), font=settings.font_name, color=COLOR_WX_MUTED)
 
     rx0, ry0 = bearing_to_xy(cx, cy, runway_heading_deg, runway_half_len)
@@ -109,8 +135,8 @@ def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg:
         tx, ty = choose_runway_label_position(label_w, label_h, runway_heading_deg, anchor_x, anchor_y)
         pizzoo.draw_text(active_rwy, xy=(tx, ty), font=settings.runway_label_font_name, color=COLOR_ACTIVE_RWY_ARROW)
 
-    if wind_dir_deg is not None:
-        wind_from = float(wind_dir_deg) % 360.0
+    wind_from = normalize_wind_dir_deg(wind_dir_deg)
+    if wind_from is not None:
         shaft_bearing = (wind_from + 180.0) % 360.0
         ax0, ay0 = bearing_to_xy(cx, cy, wind_from, 24)
         ax1, ay1 = bearing_to_xy(cx, cy, wind_from, 10)
@@ -131,6 +157,8 @@ def build_and_send_weather_idle_screen(pizzoo, settings, weather: dict) -> None:
         settings,
         wind_dir_deg=weather.get("wind_dir_deg"),
         runway_heading_deg=float(settings.runway_heading_deg),
+        wind_dir_from=weather.get("wind_dir_from"),
+        wind_dir_to=weather.get("wind_dir_to"),
     )
     LOGGER.info("Sending weather idle screen (2 frames, %ss per frame).", settings.weather_view_seconds)
     pizzoo.render(frame_speed=max(500, int(settings.weather_view_seconds * 1000)))
@@ -142,14 +170,16 @@ def draw_weather_summary_frame(pizzoo, settings, weather: dict) -> None:
     temperature = format_temp_c(weather.get("temperature_c"))
     humidity = format_humidity(weather.get("humidity_pct"))
     wind = format_wind_kph(weather.get("wind_kph"), settings.weather_wind_speed_unit)
-    wind_dir = format_wind_dir(weather.get("wind_dir_deg"))
+    wind_dir_deg = normalize_wind_dir_deg(weather.get("wind_dir_deg"))
+    wind_dir = format_wind_dir(wind_dir_deg) if wind_dir_deg is not None else None
 
     pizzoo.cls()
     pizzoo.draw_rectangle(xy=(0, 0), width=64, height=64, color=COLOR_WX_BG, filled=True)
     pizzoo.draw_rectangle(xy=(0, 0), width=64, height=11, color=COLOR_WX_ACCENT, filled=True)
     pizzoo.draw_text("Weather", xy=(2, -1), font=settings.font_name, color=COLOR_WX_TEXT)
     hum_line = fit_text(f"HUM {humidity}", 10)
-    wind_line = fit_text(f"{wind_dir} {wind.replace(' ', '')}", 10)
+    wind_text = wind.replace(" ", "")
+    wind_line = fit_text(f"{wind_dir} {wind_text}", 10) if wind_dir else fit_text(f"- {wind_text}", 10)
     pizzoo.draw_text(temperature, xy=(center_x(64, temperature), 13), font=settings.font_name, color=COLOR_WX_TEXT)
     pizzoo.draw_text(condition, xy=(center_x(64, condition), 25), font=settings.font_name, color=COLOR_WX_MUTED)
     pizzoo.draw_text(hum_line, xy=(center_x(64, hum_line), 37), font=settings.font_name, color=COLOR_WX_TEXT)

@@ -29,6 +29,7 @@ if "config" not in sys.modules:
     config.NO_FLIGHT_MAX_RETRY_SECONDS = 120
     config.RUNWAY_HEADING_DEG = 110
     config.WEATHER_REFRESH_SECONDS = 900
+    config.WEATHER_METAR_ICAO = ""
     config.WEATHER_VIEW_SECONDS = 10
     config.WEATHER_WIND_SPEED_UNIT = "mph"
     sys.modules["config"] = config

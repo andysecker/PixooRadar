@@ -1,4 +1,5 @@
 import logging
+from importlib.util import find_spec
 from dataclasses import dataclass
 from math import isfinite
 from pathlib import Path
@@ -33,6 +34,7 @@ class AppSettings:
     weather_refresh_seconds: int
     weather_view_seconds: int
     weather_wind_speed_unit: str
+    weather_metar_icao: str = ""
 
 
 def _valid_log_level(level_name: str) -> bool:
@@ -80,6 +82,10 @@ def validate_settings(settings: AppSettings) -> AppSettings:
         errors.append("FLIGHT_SPEED_UNIT must be 'mph' or 'kt'.")
     if str(settings.weather_wind_speed_unit).lower() not in {"mph", "kmh", "kph"}:
         errors.append("WEATHER_WIND_SPEED_UNIT must be 'mph' or 'kmh' (legacy 'kph' accepted).")
+    if settings.weather_metar_icao and (len(str(settings.weather_metar_icao).strip()) != 4 or not str(settings.weather_metar_icao).strip().isalnum()):
+        errors.append("WEATHER_METAR_ICAO must be a 4-character ICAO station code when set.")
+    if settings.weather_metar_icao and find_spec("metar") is None:
+        errors.append("WEATHER_METAR_ICAO is set, but dependency 'metar' is not installed. Install with: pip install metar")
     if not _valid_log_level(settings.log_level):
         errors.append("LOG_LEVEL must be one of DEBUG, INFO, WARNING, ERROR, CRITICAL (or equivalent).")
 
@@ -122,6 +128,6 @@ def load_settings() -> AppSettings:
         weather_refresh_seconds=app_config.WEATHER_REFRESH_SECONDS,
         weather_view_seconds=app_config.WEATHER_VIEW_SECONDS,
         weather_wind_speed_unit=app_config.WEATHER_WIND_SPEED_UNIT,
+        weather_metar_icao=getattr(app_config, "WEATHER_METAR_ICAO", ""),
     )
     return validate_settings(settings)
-

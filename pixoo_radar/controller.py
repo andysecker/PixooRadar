@@ -33,6 +33,7 @@ class PixooRadarController:
                 latitude=settings.latitude,
                 longitude=settings.longitude,
                 refresh_seconds=settings.weather_refresh_seconds,
+                metar_icao=settings.weather_metar_icao,
             )
 
         self.pixoo_service = pixoo_service
