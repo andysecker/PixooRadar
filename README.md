@@ -5,6 +5,45 @@ Pixoo64 display app with two operating modes:
 - `Flight mode`: shows the closest flight from FlightRadar24 data.
 - `Idle mode`: shows weather views (including runway/wind diagram) or a holding screen when no flights are available.
 
+This is no longer the original fork behavior. The app now prioritizes useful always-on output instead of showing stale flight data.
+
+## What It Shows
+
+### Flight Mode
+- Airline logo (cached locally)
+- Route (`origin -> destination`)
+- Flight number, altitude, aircraft type, registration
+- Ground speed and heading
+- Speed unit configurable (`mph` or `kt`)
+
+### Idle Weather Mode
+Two-frame weather loop (frame duration configurable):
+
+1. Weather summary
+- Temperature
+- Condition
+- Humidity
+- Wind (direction + speed)
+
+2. Runway wind diagram
+- Runway drawn at your configured heading
+- Wind arrow overlaid by current wind direction
+- Active runway direction arrow (green), selected from wind/runway alignment
+- Active runway designator label near the green arrow (optional micro-font)
+- North marker at top of the compass ring
+
+## Data Sources
+
+- Flight data: `FlightRadarAPI` (community package, unofficial access pattern)
+- Weather data: Open-Meteo via `openmeteo-requests`
+- Destination METAR enrichment: NOAA
+
+## Requirements
+
+- Python 3.10+
+- Pixoo64 on your local network
+- Internet access for flight/weather APIs
+
 ## Install
 
 ```bash
@@ -113,3 +152,9 @@ GitHub Actions runs on every push/PR:
 - `ruff check .`
 - `mypy`
 - `pytest -q`
+
+## Notes
+
+- `config.py` is intended to stay local and untracked.
+- If using a Raspberry Pi, run this under `systemd` or `screen` for 24/7 uptime.
+- Flight API behavior can vary; backoff/cooldown settings are important for long-running stability.
