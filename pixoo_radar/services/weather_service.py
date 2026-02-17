@@ -21,3 +21,6 @@ class WeatherService:
 
     def get_last_error(self):
         return self._client.get_last_error()
+
+    def validate_startup_sources(self, require_metar: bool = False):
+        self._client.validate_startup_sources(require_metar=require_metar)

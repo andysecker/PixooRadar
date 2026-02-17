@@ -30,7 +30,6 @@ def _settings():
         log_level="INFO",
         log_verbose_events=True,
         logo_dir="airline_logos",
-        idle_mode="weather",
         no_flight_retry_seconds=15,
         no_flight_max_retry_seconds=120,
         runway_heading_deg=110,
@@ -83,4 +82,3 @@ def test_holding_screen_snapshot_hash():
 
     expected_hash = (GOLDEN_DIR / "holding_screen.sha256").read_text(encoding="utf-8").strip()
     assert _ops_sha256(recorder.ops) == expected_hash
-

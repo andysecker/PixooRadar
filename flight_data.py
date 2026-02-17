@@ -5,12 +5,11 @@ Facade for fetching closest-flight payloads while delegating to componentized
 provider/filter/logo/METAR modules.
 """
 
-import json
 import re
 from time import monotonic
 
 from config import API_RATE_LIMIT_COOLDOWN_SECONDS, FLIGHT_SEARCH_RADIUS_METERS, LOGO_BG_COLOR
-from pixoo_radar.flight.filters import choose_closest_flight, haversine_km
+from pixoo_radar.flight.filters import choose_closest_flight
 from pixoo_radar.flight.logos import LogoManager
 from pixoo_radar.flight.mapping import build_flight_payload
 from pixoo_radar.flight.provider import FlightRadarProvider
@@ -84,11 +83,6 @@ class FlightData:
         self._api_cooldown_until = monotonic() + cooldown_seconds
         self._last_api_error = reason
 
-    @staticmethod
-    def haversine(lat1, lon1, lat2, lon2):
-        """Backward-compatible utility exposing great-circle distance in kilometers."""
-        return haversine_km(lat1, lon1, lat2, lon2)
-
     def _find_closest(self, lat, lon):
         if self.get_api_cooldown_remaining() > 0:
             return None, None
@@ -144,11 +138,3 @@ class FlightData:
                 pass
 
         return flight_data
-
-
-if __name__ == "__main__":
-    from config import LATITUDE, LOGO_DIR, LONGITUDE
-
-    fd = FlightData(save_logo_dir=LOGO_DIR)
-    data = fd.get_closest_flight_data(LATITUDE, LONGITUDE)
-    print(json.dumps(data, indent=4))

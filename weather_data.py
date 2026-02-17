@@ -121,6 +121,12 @@ class WeatherData:
                 raise RuntimeError(
                     f"Weather startup validation failed: METAR decode returned no usable fields for {self.metar_icao}."
                 )
+        payload = self._normalize(raw)
+        if not payload:
+            raise RuntimeError("Weather startup validation failed: normalized payload is empty.")
+        self._cache = payload
+        self._cache_at = monotonic()
+        self._last_error = None
 
     def _normalize(self, raw):
         if not isinstance(raw, dict):
@@ -158,20 +164,6 @@ class WeatherData:
             "wind_dir_to": metar_fields.get("wind_dir_to"),
             "location": metar_fields.get("location") or "LOCAL WX",
             "source": source,
-        }
-
-    @staticmethod
-    def _fallback_payload():
-        return {
-            "temperature_c": None,
-            "condition": "SET PROVIDER",
-            "humidity_pct": None,
-            "wind_kph": None,
-            "wind_dir_deg": None,
-            "wind_dir_from": None,
-            "wind_dir_to": None,
-            "location": "LOCAL WX",
-            "source": "scaffold",
         }
 
     def _fetch_from_provider(self, latitude, longitude):
@@ -218,6 +210,7 @@ class WeatherData:
 
         try:
             open_meteo_payload = self.provider(self.latitude, self.longitude)
+            LOGGER.info("Open-Meteo raw response: %s", open_meteo_payload if open_meteo_payload is not None else "<none>")
         except Exception as exc:  # noqa: BLE001
             provider_error = str(exc)
             LOGGER.warning("Open-Meteo fetch failed: %s", exc)
@@ -225,6 +218,7 @@ class WeatherData:
         if self.metar_icao:
             try:
                 metar_payload = self.metar_fetcher(self.metar_icao)
+                LOGGER.info("METAR raw response (%s): %s", self.metar_icao, metar_payload if metar_payload is not None else "<none>")
                 metar_raw = None
                 if isinstance(metar_payload, dict):
                     metar_raw = metar_payload.get("raw")

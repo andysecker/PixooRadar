@@ -23,7 +23,6 @@ def _base_settings():
         log_level="INFO",
         log_verbose_events=True,
         logo_dir="airline_logos",
-        idle_mode="weather",
         no_flight_retry_seconds=15,
         no_flight_max_retry_seconds=120,
         runway_heading_deg=110.0,
@@ -90,7 +89,7 @@ def test_validate_settings_rejects_invalid_startup_connect_timeout():
         validate_settings(settings)
 
 
-def test_validate_settings_rejects_missing_openmeteo_dependency_when_weather_idle(monkeypatch):
+def test_validate_settings_rejects_missing_openmeteo_dependency(monkeypatch):
     import pixoo_radar.settings as settings_module
 
     monkeypatch.setattr(settings_module, "find_spec", lambda name: None if name == "openmeteo_requests" else object())

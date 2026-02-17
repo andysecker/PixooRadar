@@ -1,9 +1,9 @@
 # Pixoo Radar
 
-Pixoo64 display app with two operating modes:
+Pixoo64 display app with:
 
 - `Flight mode`: shows the closest flight from FlightRadar24 data.
-- `Idle mode`: shows weather views (including runway/wind diagram) or a holding screen when no flights are available.
+- `Idle weather mode`: always shows weather views (including runway/wind diagram) when no flights are available.
 
 This is no longer the original fork behavior. The app now prioritizes useful always-on output instead of showing stale flight data.
 
@@ -43,7 +43,7 @@ Two-frame weather loop (frame duration configurable):
 
 - Python 3.10+
 - Pixoo64 on your local network
-- Internet access for flight/weather APIs
+- Internet access for FlightRadar24/Open-Meteo/NOAA METAR APIs
 - Python package `metar` when `WEATHER_METAR_ICAO` is configured
 
 ## Install
@@ -71,13 +71,15 @@ python display_flight_data_pizoo.py --caffeinate
 All runtime settings are in `config.py`.
 
 - Device/location: `PIXOO_IP`, `PIXOO_PORT`, `LATITUDE`, `LONGITUDE`, `FLIGHT_SEARCH_RADIUS_METERS`
+- Pixoo startup fail-fast: `PIXOO_STARTUP_CONNECT_TIMEOUT_SECONDS`
 - Polling/backoff: `DATA_REFRESH_SECONDS`, `NO_FLIGHT_RETRY_SECONDS`, `NO_FLIGHT_MAX_RETRY_SECONDS`, `API_RATE_LIMIT_COOLDOWN_SECONDS`
-- Idle weather: `IDLE_MODE`, `WEATHER_REFRESH_SECONDS`, `WEATHER_VIEW_SECONDS`, `RUNWAY_HEADING_DEG`
+- Idle weather: `WEATHER_REFRESH_SECONDS`, `WEATHER_VIEW_SECONDS`, `RUNWAY_HEADING_DEG`
 - METAR source: `WEATHER_METAR_ICAO` (4-letter ICAO; blank disables METAR fields)
 - Units: `FLIGHT_SPEED_UNIT` (`mph` or `kt`), `WEATHER_WIND_SPEED_UNIT` (`mph` or `kmh`; legacy `kph` accepted)
 - Fonts: `FONT_NAME`, `FONT_PATH`, optional `RUNWAY_LABEL_FONT_NAME`, `RUNWAY_LABEL_FONT_PATH`
 - Logging: `LOG_LEVEL`, `LOG_VERBOSE_EVENTS`
 - Startup validates config values and file paths and exits with clear errors if invalid.
+- Startup validates weather sources by fetching Open-Meteo (and METAR when configured) before entering the main loop.
 - If `WEATHER_METAR_ICAO` is set, startup also hard-fails unless dependency `metar` is installed.
 
 ## Runtime Behavior
@@ -86,7 +88,6 @@ State machine values:
 
 - `flight_active`
 - `idle_weather`
-- `idle_holding`
 - `rate_limit`
 - `api_error`
 
@@ -94,9 +95,12 @@ Operational behavior:
 
 - Flight view is re-rendered when tracked flight telemetry changes (altitude, speed, heading, status).
 - Stationary ground targets are filtered out (`altitude<=0` and `ground_speed<=0`).
-- No-flight retries use exponential backoff up to `NO_FLIGHT_MAX_RETRY_SECONDS`.
+- No-flight retries use exponential backoff up to `NO_FLIGHT_MAX_RETRY_SECONDS` and idle view is always weather.
 - If Pixoo is offline, flight/weather API polling is paused until reconnect succeeds.
 - Weather refresh logs include both raw provider payloads (Open-Meteo + METAR) and normalized payload.
+- Each API call logs immediate raw return data:
+  - `Open-Meteo raw response: ...`
+  - `METAR raw response (ICAO): ...`
 - METAR raw string is logged on every weather refresh.
 - On runway weather view, if METAR provides variable wind sector (`dddVddd`), nearest boundary tick marks are highlighted in orange.
 

@@ -25,7 +25,6 @@ if "config" not in sys.modules:
     config.LOG_LEVEL = "INFO"
     config.LOG_VERBOSE_EVENTS = True
     config.LOGO_DIR = "airline_logos"
-    config.IDLE_MODE = "weather"
     config.NO_FLIGHT_RETRY_SECONDS = 15
     config.NO_FLIGHT_MAX_RETRY_SECONDS = 120
     config.RUNWAY_HEADING_DEG = 110

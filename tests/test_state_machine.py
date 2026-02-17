@@ -12,7 +12,7 @@ class DummyController(PixooRadarController):
         super().__init__(settings, pixoo_service=DummyService(), flight_service=DummyService(), weather_service=DummyService())
 
 
-def _settings(idle_mode="weather"):
+def _settings():
     return AppSettings(
         pixoo_ip="127.0.0.1",
         pixoo_port=80,
@@ -32,7 +32,6 @@ def _settings(idle_mode="weather"):
         log_level="INFO",
         log_verbose_events=True,
         logo_dir="airline_logos",
-        idle_mode=idle_mode,
         no_flight_retry_seconds=15,
         no_flight_max_retry_seconds=120,
         runway_heading_deg=110,
@@ -53,10 +52,5 @@ def test_resolve_target_state_api_error():
 
 
 def test_resolve_target_state_weather_idle():
-    c = DummyController(_settings("weather"))
+    c = DummyController(_settings())
     assert c.resolve_target_state(cooldown_remaining=0, api_error=None) == RenderState.IDLE_WEATHER
-
-
-def test_resolve_target_state_holding_idle():
-    c = DummyController(_settings("holding"))
-    assert c.resolve_target_state(cooldown_remaining=0, api_error=None) == RenderState.IDLE_HOLDING

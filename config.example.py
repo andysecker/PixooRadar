@@ -51,10 +51,6 @@ NO_FLIGHT_MAX_RETRY_SECONDS = 120
 # Default cooldown (seconds) when API rate-limit response does not provide Retry-After.
 API_RATE_LIMIT_COOLDOWN_SECONDS = 300
 
-# Idle mode shown when no flights are in range.
-# Current options: "weather" or "holding"
-IDLE_MODE = "weather"
-
 # Weather refresh interval while in idle weather mode (seconds).
 # 900s = 15 minutes.
 WEATHER_REFRESH_SECONDS = 900
@@ -91,13 +87,11 @@ LOG_LEVEL = "INFO"
 # Colors
 # =============================================================================
 COLOR_TEXT = "#FFFF00"           # Yellow - main text color
-COLOR_ACCENT = "#00BA0F"         # Green - animation accent
-COLOR_BACKGROUND = "#BABABA"     # Light gray - display background
 COLOR_BOX = "#454545"            # Dark gray - info boxes
 
 # =============================================================================
 # Logo Processing
 # =============================================================================
 # Background color for airline logos (RGBA)
-# Should match COLOR_BACKGROUND for seamless display
+# Match your display background for seamless logo cards
 LOGO_BG_COLOR = (186, 186, 186, 255)

@@ -28,7 +28,6 @@ class AppSettings:
     log_level: str
     log_verbose_events: bool
     logo_dir: str
-    idle_mode: str
     no_flight_retry_seconds: int
     no_flight_max_retry_seconds: int
     runway_heading_deg: float
@@ -80,8 +79,6 @@ def validate_settings(settings: AppSettings) -> AppSettings:
     if not isfinite(runway_heading) or not (0.0 <= runway_heading < 360.0):
         errors.append("RUNWAY_HEADING_DEG must be a finite value in range [0, 360).")
 
-    if str(settings.idle_mode).lower() not in {"weather", "holding"}:
-        errors.append("IDLE_MODE must be 'weather' or 'holding'.")
     if str(settings.flight_speed_unit).lower() not in {"mph", "kt"}:
         errors.append("FLIGHT_SPEED_UNIT must be 'mph' or 'kt'.")
     if str(settings.weather_wind_speed_unit).lower() not in {"mph", "kmh", "kph"}:
@@ -90,9 +87,9 @@ def validate_settings(settings: AppSettings) -> AppSettings:
         errors.append("WEATHER_METAR_ICAO must be a 4-character ICAO station code when set.")
     if settings.weather_metar_icao and find_spec("metar") is None:
         errors.append("WEATHER_METAR_ICAO is set, but dependency 'metar' is not installed. Install with: pip install metar")
-    if str(settings.idle_mode).lower() == "weather" and find_spec("openmeteo_requests") is None:
+    if find_spec("openmeteo_requests") is None:
         errors.append(
-            "IDLE_MODE is 'weather', but dependency 'openmeteo-requests' is not installed. "
+            "Dependency 'openmeteo-requests' is required for weather idle view. "
             "Install with: pip install openmeteo-requests"
         )
     if not _valid_log_level(settings.log_level):
@@ -131,7 +128,6 @@ def load_settings() -> AppSettings:
             log_level=app_config.LOG_LEVEL,
             log_verbose_events=app_config.LOG_VERBOSE_EVENTS,
             logo_dir=app_config.LOGO_DIR,
-            idle_mode=app_config.IDLE_MODE,
             no_flight_retry_seconds=app_config.NO_FLIGHT_RETRY_SECONDS,
             no_flight_max_retry_seconds=app_config.NO_FLIGHT_MAX_RETRY_SECONDS,
             runway_heading_deg=app_config.RUNWAY_HEADING_DEG,

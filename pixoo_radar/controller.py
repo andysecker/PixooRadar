@@ -66,9 +66,7 @@ class PixooRadarController:
             return RenderState.RATE_LIMIT
         if api_error:
             return RenderState.API_ERROR
-        if self.settings.idle_mode.lower() == "weather":
-            return RenderState.IDLE_WEATHER
-        return RenderState.IDLE_HOLDING
+        return RenderState.IDLE_WEATHER
 
     def reset_tracking(self):
         self.current_state = None
@@ -97,6 +95,11 @@ class PixooRadarController:
                     LOGGER.warning("Weather refresh failed (%s); using cached/fallback weather data.", weather_error)
                 else:
                     LOGGER.info("Weather updated from API (%s).", weather_snapshot.source or "unknown source")
+            else:
+                LOGGER.info(
+                    "Weather refresh skipped (cache still valid; interval %ss).",
+                    self.settings.weather_refresh_seconds,
+                )
             build_and_send_weather_idle_screen(self.pizzoo, self.settings, weather_snapshot.payload)
         elif target_state == RenderState.RATE_LIMIT:
             build_and_send_holding_screen(self.pizzoo, self.settings, status="RATE LIMIT")
@@ -116,6 +119,11 @@ class PixooRadarController:
                 else:
                     LOGGER.info("Weather updated from API (%s).", weather_snapshot.source or "unknown source")
                 build_and_send_weather_idle_screen(self.pizzoo, self.settings, weather_snapshot.payload)
+            else:
+                LOGGER.info(
+                    "Weather refresh skipped (cache still valid; interval %ss).",
+                    self.settings.weather_refresh_seconds,
+                )
 
     def run_once(self):
         LOGGER.info("Starting polling cycle.")
