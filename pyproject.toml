@@ -1,0 +1,23 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = [".venv", "__pycache__", ".pytest_cache"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+pretty = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+files = [
+  "display_flight_data_pizoo.py",
+  "flight_data.py",
+  "weather_data.py",
+  "pixoo_radar",
+  "tests",
+]
+exclude = "(^\\.venv/|^__pycache__/)"
+

@@ -1,5 +1,5 @@
 import logging
-from time import sleep
+from time import monotonic, sleep
 
 from pixoo_radar.models import RenderState
 from pixoo_radar.render.flight_view import build_and_send_animation
@@ -10,7 +10,15 @@ LOGGER = logging.getLogger("pixoo_radar")
 
 
 class PixooRadarController:
-    def __init__(self, settings, pixoo_service=None, flight_service=None, weather_service=None):
+    def __init__(
+        self,
+        settings,
+        pixoo_service=None,
+        flight_service=None,
+        weather_service=None,
+        sleep_fn=None,
+        clock_fn=None,
+    ):
         self.settings = settings
 
         if pixoo_service is None:
@@ -35,6 +43,9 @@ class PixooRadarController:
         self.current_flight_id = None
         self.current_flight_signature = None
         self.no_data_retry_seconds = settings.no_flight_retry_seconds
+        self.sleep_fn = sleep_fn or sleep
+        self.clock_fn = clock_fn or monotonic
+        self.last_cycle_started_at = None
 
     @staticmethod
     def flight_render_signature(data: dict) -> tuple:
@@ -100,74 +111,78 @@ class PixooRadarController:
                     LOGGER.info("Weather updated from API (%s).", weather_snapshot.source or "unknown source")
                 build_and_send_weather_idle_screen(self.pizzoo, self.settings, weather_snapshot.payload)
 
+    def run_once(self):
+        LOGGER.info("Starting polling cycle.")
+        self.last_cycle_started_at = self.clock_fn()
+        if not self.pixoo_service.is_reachable():
+            LOGGER.warning("Pixoo offline; pausing flight/weather API updates until reconnect succeeds.")
+            self.reconnect()
+            return
+
+        LOGGER.info("Fetching closest flight data.")
+        flight_snapshot = self.poll_flight()
+        cooldown_remaining = self.flight_service.get_api_cooldown_remaining()
+        api_error = self.flight_service.get_last_api_error()
+
+        if flight_snapshot:
+            self.no_data_retry_seconds = self.settings.no_flight_retry_seconds
+            self.current_state = RenderState.FLIGHT_ACTIVE
+            data = flight_snapshot.payload
+            new_flight_id = data.get("icao24")
+            new_signature = self.flight_render_signature(data)
+            if new_flight_id == self.current_flight_id:
+                if new_signature == self.current_flight_signature:
+                    LOGGER.info("Still tracking %s; telemetry unchanged.", data.get("flight_number"))
+                    self.sleep_fn(self.settings.data_refresh_seconds)
+                    return
+                LOGGER.info("Still tracking %s; telemetry changed, updating animation.", data.get("flight_number"))
+
+            self.current_flight_id = new_flight_id
+            self.current_flight_signature = new_signature
+            LOGGER.info("New flight: %s (%s -> %s).", data.get("flight_number"), data.get("origin"), data.get("destination"))
+            try:
+                build_and_send_animation(self.pizzoo, self.settings, data)
+            except Exception as exc:
+                LOGGER.error("Lost Pixoo connection while rendering flight view (%s).", exc)
+                self.reconnect()
+                return
+            LOGGER.info("Animation playing. Next check in %ss.", self.settings.data_refresh_seconds)
+            self.sleep_fn(self.settings.data_refresh_seconds)
+            return
+
+        retry_seconds = max(self.no_data_retry_seconds, cooldown_remaining)
+        target_state = self.resolve_target_state(cooldown_remaining, api_error)
+        if target_state != self.current_state:
+            LOGGER.info("State transition: %s -> %s", self.current_state, target_state)
+            try:
+                self.handle_state_transition(target_state)
+            except Exception as exc:
+                LOGGER.error("Lost Pixoo connection while rendering idle view (%s).", exc)
+                self.reconnect()
+                return
+        else:
+            try:
+                self.handle_same_state_tick(target_state)
+            except Exception as exc:
+                LOGGER.error("Lost Pixoo connection while rendering weather view (%s).", exc)
+                self.reconnect()
+                return
+
+        if target_state == RenderState.RATE_LIMIT:
+            if cooldown_remaining > 0:
+                LOGGER.warning("FlightRadar24 rate limit active, retrying in %ss.", retry_seconds)
+        elif target_state == RenderState.API_ERROR:
+            LOGGER.warning("Flight API error, retrying in %ss.", retry_seconds)
+        else:
+            LOGGER.info("No flight data available, retrying in %ss.", retry_seconds)
+
+        self.sleep_fn(retry_seconds)
+        self.no_data_retry_seconds = min(
+            self.no_data_retry_seconds * 2,
+            self.settings.no_flight_max_retry_seconds,
+        )
+
     def run(self):
         self.reconnect()
         while True:
-            LOGGER.info("Starting polling cycle.")
-            if not self.pixoo_service.is_reachable():
-                LOGGER.warning("Pixoo offline; pausing flight/weather API updates until reconnect succeeds.")
-                self.reconnect()
-                continue
-
-            LOGGER.info("Fetching closest flight data.")
-            flight_snapshot = self.poll_flight()
-            cooldown_remaining = self.flight_service.get_api_cooldown_remaining()
-            api_error = self.flight_service.get_last_api_error()
-
-            if flight_snapshot:
-                self.no_data_retry_seconds = self.settings.no_flight_retry_seconds
-                self.current_state = RenderState.FLIGHT_ACTIVE
-                data = flight_snapshot.payload
-                new_flight_id = data.get("icao24")
-                new_signature = self.flight_render_signature(data)
-                if new_flight_id == self.current_flight_id:
-                    if new_signature == self.current_flight_signature:
-                        LOGGER.info("Still tracking %s; telemetry unchanged.", data.get("flight_number"))
-                        sleep(self.settings.data_refresh_seconds)
-                        continue
-                    LOGGER.info("Still tracking %s; telemetry changed, updating animation.", data.get("flight_number"))
-
-                self.current_flight_id = new_flight_id
-                self.current_flight_signature = new_signature
-                LOGGER.info("New flight: %s (%s -> %s).", data.get("flight_number"), data.get("origin"), data.get("destination"))
-                try:
-                    build_and_send_animation(self.pizzoo, self.settings, data)
-                except Exception as exc:
-                    LOGGER.error("Lost Pixoo connection while rendering flight view (%s).", exc)
-                    self.reconnect()
-                    continue
-                LOGGER.info("Animation playing. Next check in %ss.", self.settings.data_refresh_seconds)
-                sleep(self.settings.data_refresh_seconds)
-                continue
-
-            retry_seconds = max(self.no_data_retry_seconds, cooldown_remaining)
-            target_state = self.resolve_target_state(cooldown_remaining, api_error)
-            if target_state != self.current_state:
-                LOGGER.info("State transition: %s -> %s", self.current_state, target_state)
-                try:
-                    self.handle_state_transition(target_state)
-                except Exception as exc:
-                    LOGGER.error("Lost Pixoo connection while rendering idle view (%s).", exc)
-                    self.reconnect()
-                    continue
-            else:
-                try:
-                    self.handle_same_state_tick(target_state)
-                except Exception as exc:
-                    LOGGER.error("Lost Pixoo connection while rendering weather view (%s).", exc)
-                    self.reconnect()
-                    continue
-
-            if target_state == RenderState.RATE_LIMIT:
-                if cooldown_remaining > 0:
-                    LOGGER.warning("FlightRadar24 rate limit active, retrying in %ss.", retry_seconds)
-            elif target_state == RenderState.API_ERROR:
-                LOGGER.warning("Flight API error, retrying in %ss.", retry_seconds)
-            else:
-                LOGGER.info("No flight data available, retrying in %ss.", retry_seconds)
-
-            sleep(retry_seconds)
-            self.no_data_retry_seconds = min(
-                self.no_data_retry_seconds * 2,
-                self.settings.no_flight_max_retry_seconds,
-            )
+            self.run_once()

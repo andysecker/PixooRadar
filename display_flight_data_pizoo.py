@@ -25,7 +25,11 @@ def configure_logging(level_name: str, verbose_events: bool) -> None:
 
 
 def main() -> None:
-    settings = load_settings()
+    try:
+        settings = load_settings()
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        sys.exit(2)
     configure_logging(settings.log_level, settings.log_verbose_events)
     LOGGER.info("Starting Pixoo Radar.")
 

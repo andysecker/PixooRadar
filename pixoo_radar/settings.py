@@ -1,4 +1,7 @@
+import logging
 from dataclasses import dataclass
+from math import isfinite
+from pathlib import Path
 
 import config as app_config
 
@@ -32,9 +35,68 @@ class AppSettings:
     weather_wind_speed_unit: str
 
 
+def _valid_log_level(level_name: str) -> bool:
+    return isinstance(getattr(logging, str(level_name).upper(), None), int)
+
+
+def validate_settings(settings: AppSettings) -> AppSettings:
+    """Validate startup configuration and raise a clear error on invalid values."""
+    errors = []
+
+    if not str(settings.pixoo_ip).strip():
+        errors.append("PIXOO_IP must be a non-empty string.")
+    if int(settings.pixoo_port) < 1 or int(settings.pixoo_port) > 65535:
+        errors.append("PIXOO_PORT must be between 1 and 65535.")
+
+    if int(settings.pixoo_reconnect_seconds) <= 0:
+        errors.append("PIXOO_RECONNECT_SECONDS must be > 0.")
+    if int(settings.data_refresh_seconds) <= 0:
+        errors.append("DATA_REFRESH_SECONDS must be > 0.")
+    if int(settings.no_flight_retry_seconds) <= 0:
+        errors.append("NO_FLIGHT_RETRY_SECONDS must be > 0.")
+    if int(settings.no_flight_max_retry_seconds) < int(settings.no_flight_retry_seconds):
+        errors.append("NO_FLIGHT_MAX_RETRY_SECONDS must be >= NO_FLIGHT_RETRY_SECONDS.")
+    if int(settings.weather_refresh_seconds) <= 0:
+        errors.append("WEATHER_REFRESH_SECONDS must be > 0.")
+    if int(settings.weather_view_seconds) <= 0:
+        errors.append("WEATHER_VIEW_SECONDS must be > 0.")
+    if int(settings.animation_frame_speed) <= 0:
+        errors.append("ANIMATION_FRAME_SPEED must be > 0.")
+    if int(settings.flight_search_radius_meters) <= 0:
+        errors.append("FLIGHT_SEARCH_RADIUS_METERS must be > 0.")
+
+    if not isfinite(float(settings.latitude)) or not (-90.0 <= float(settings.latitude) <= 90.0):
+        errors.append("LATITUDE must be a finite value in range [-90, 90].")
+    if not isfinite(float(settings.longitude)) or not (-180.0 <= float(settings.longitude) <= 180.0):
+        errors.append("LONGITUDE must be a finite value in range [-180, 180].")
+
+    runway_heading = float(settings.runway_heading_deg)
+    if not isfinite(runway_heading) or not (0.0 <= runway_heading < 360.0):
+        errors.append("RUNWAY_HEADING_DEG must be a finite value in range [0, 360).")
+
+    if str(settings.idle_mode).lower() not in {"weather", "holding"}:
+        errors.append("IDLE_MODE must be 'weather' or 'holding'.")
+    if str(settings.flight_speed_unit).lower() not in {"mph", "kt"}:
+        errors.append("FLIGHT_SPEED_UNIT must be 'mph' or 'kt'.")
+    if str(settings.weather_wind_speed_unit).lower() not in {"mph", "kmh", "kph"}:
+        errors.append("WEATHER_WIND_SPEED_UNIT must be 'mph' or 'kmh' (legacy 'kph' accepted).")
+    if not _valid_log_level(settings.log_level):
+        errors.append("LOG_LEVEL must be one of DEBUG, INFO, WARNING, ERROR, CRITICAL (or equivalent).")
+
+    font_path = Path(settings.font_path).expanduser()
+    runway_font_path = Path(settings.runway_label_font_path).expanduser()
+    if not font_path.is_file():
+        errors.append(f"FONT_PATH does not exist or is not a file: {settings.font_path}")
+    if not runway_font_path.is_file():
+        errors.append(f"RUNWAY_LABEL_FONT_PATH does not exist or is not a file: {settings.runway_label_font_path}")
+
+    if errors:
+        raise ValueError("Invalid configuration:\n- " + "\n- ".join(errors))
+    return settings
+
 
 def load_settings() -> AppSettings:
-    return AppSettings(
+    settings = AppSettings(
         pixoo_ip=app_config.PIXOO_IP,
         pixoo_port=app_config.PIXOO_PORT,
         pixoo_reconnect_seconds=app_config.PIXOO_RECONNECT_SECONDS,
@@ -61,3 +123,5 @@ def load_settings() -> AppSettings:
         weather_view_seconds=app_config.WEATHER_VIEW_SECONDS,
         weather_wind_speed_unit=app_config.WEATHER_WIND_SPEED_UNIT,
     )
+    return validate_settings(settings)
+

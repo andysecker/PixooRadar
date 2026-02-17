@@ -124,12 +124,25 @@ def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg:
 
 
 def build_and_send_weather_idle_screen(pizzoo, settings, weather: dict) -> None:
+    draw_weather_summary_frame(pizzoo, settings, weather)
+    pizzoo.add_frame()
+    draw_runway_wind_diagram(
+        pizzoo,
+        settings,
+        wind_dir_deg=weather.get("wind_dir_deg"),
+        runway_heading_deg=float(settings.runway_heading_deg),
+    )
+    LOGGER.info("Sending weather idle screen (2 frames, %ss per frame).", settings.weather_view_seconds)
+    pizzoo.render(frame_speed=max(500, int(settings.weather_view_seconds * 1000)))
+
+
+def draw_weather_summary_frame(pizzoo, settings, weather: dict) -> None:
+    """Draw frame 1 of weather idle mode (summary text card)."""
     condition = fit_text(str(weather.get("condition") or "NO DATA").upper(), 10)
     temperature = format_temp_c(weather.get("temperature_c"))
     humidity = format_humidity(weather.get("humidity_pct"))
     wind = format_wind_kph(weather.get("wind_kph"), settings.weather_wind_speed_unit)
     wind_dir = format_wind_dir(weather.get("wind_dir_deg"))
-    wind_dir_deg = weather.get("wind_dir_deg")
 
     pizzoo.cls()
     pizzoo.draw_rectangle(xy=(0, 0), width=64, height=64, color=COLOR_WX_BG, filled=True)
@@ -141,8 +154,3 @@ def build_and_send_weather_idle_screen(pizzoo, settings, weather: dict) -> None:
     pizzoo.draw_text(condition, xy=(center_x(64, condition), 25), font=settings.font_name, color=COLOR_WX_MUTED)
     pizzoo.draw_text(hum_line, xy=(center_x(64, hum_line), 37), font=settings.font_name, color=COLOR_WX_TEXT)
     pizzoo.draw_text(wind_line, xy=(center_x(64, wind_line), 49), font=settings.font_name, color=COLOR_WX_TEXT)
-
-    pizzoo.add_frame()
-    draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg=wind_dir_deg, runway_heading_deg=float(settings.runway_heading_deg))
-    LOGGER.info("Sending weather idle screen (2 frames, %ss per frame).", settings.weather_view_seconds)
-    pizzoo.render(frame_speed=max(500, int(settings.weather_view_seconds * 1000)))

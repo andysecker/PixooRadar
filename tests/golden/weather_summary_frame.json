@@ -1,0 +1,77 @@
+[
+  {
+    "op": "cls"
+  },
+  {
+    "op": "draw_rectangle",
+    "xy": [
+      0,
+      0
+    ],
+    "width": 64,
+    "height": 64,
+    "color": "#10243F",
+    "filled": true
+  },
+  {
+    "op": "draw_rectangle",
+    "xy": [
+      0,
+      0
+    ],
+    "width": 64,
+    "height": 11,
+    "color": "#2F6EA4",
+    "filled": true
+  },
+  {
+    "op": "draw_text",
+    "text": "Weather",
+    "xy": [
+      2,
+      -1
+    ],
+    "font": "splitflap",
+    "color": "#EAF6FF"
+  },
+  {
+    "op": "draw_text",
+    "text": "22C",
+    "xy": [
+      23,
+      13
+    ],
+    "font": "splitflap",
+    "color": "#EAF6FF"
+  },
+  {
+    "op": "draw_text",
+    "text": "CLEAR",
+    "xy": [
+      17,
+      25
+    ],
+    "font": "splitflap",
+    "color": "#A8C7DE"
+  },
+  {
+    "op": "draw_text",
+    "text": "HUM 55%",
+    "xy": [
+      11,
+      37
+    ],
+    "font": "splitflap",
+    "color": "#EAF6FF"
+  },
+  {
+    "op": "draw_text",
+    "text": "NE 10Mph",
+    "xy": [
+      8,
+      49
+    ],
+    "font": "splitflap",
+    "color": "#EAF6FF"
+  }
+]
