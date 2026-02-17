@@ -41,7 +41,7 @@ class FakePixooService:
     def is_reachable(self):
         return self.reachable
 
-    def connect_with_retry(self):
+    def connect_with_retry(self, fail_fast=False):
         self.connect_calls += 1
         return FakePizzoo()
 
@@ -135,4 +135,3 @@ def test_run_once_no_flight_backoff_uses_injected_sleep():
     assert controller.current_state == RenderState.IDLE_HOLDING
     assert sleeps == [15]
     assert controller.no_data_retry_seconds == 30
-

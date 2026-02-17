@@ -113,3 +113,27 @@ def test_open_meteo_fetch_requests_only_weather_code(monkeypatch):
 def test_relative_humidity_derived_from_celsius_temp_and_dewpoint():
     rh = WeatherData._relative_humidity_from_temp_dewpoint(20.0, 10.0)
     assert rh == pytest.approx(52.5, abs=0.5)
+
+
+def test_weather_startup_validation_fails_when_openmeteo_condition_missing():
+    wx = WeatherData(
+        latitude=34.0,
+        longitude=32.0,
+        provider=lambda _lat, _lon: None,
+        metar_fetcher=lambda _icao: None,
+        metar_icao="",
+    )
+    with pytest.raises(RuntimeError, match="Open-Meteo condition is unavailable"):
+        wx.validate_startup_sources(require_metar=False)
+
+
+def test_weather_startup_validation_fails_when_required_metar_missing():
+    wx = WeatherData(
+        latitude=34.0,
+        longitude=32.0,
+        provider=lambda _lat, _lon: {"condition": "CLEAR"},
+        metar_fetcher=lambda _icao: None,
+        metar_icao="LCPH",
+    )
+    with pytest.raises(RuntimeError, match="no METAR raw data returned"):
+        wx.validate_startup_sources(require_metar=True)

@@ -76,8 +76,13 @@ class PixooRadarController:
         self.current_flight_signature = None
         self.no_data_retry_seconds = self.settings.no_flight_retry_seconds
 
-    def reconnect(self):
-        self.pizzoo = self.pixoo_service.connect_with_retry()
+    @staticmethod
+    def _is_fatal_weather_error(exc: Exception) -> bool:
+        msg = str(exc)
+        return msg.startswith("Weather bootstrap failed:") or msg.startswith("Weather startup validation failed:")
+
+    def reconnect(self, fail_fast: bool = False):
+        self.pizzoo = self.pixoo_service.connect_with_retry(fail_fast=fail_fast)
         self.reset_tracking()
 
     def handle_state_transition(self, target_state):
@@ -159,6 +164,9 @@ class PixooRadarController:
             try:
                 self.handle_state_transition(target_state)
             except Exception as exc:
+                if self._is_fatal_weather_error(exc):
+                    LOGGER.error("Fatal weather error: %s", exc)
+                    raise
                 LOGGER.error("Lost Pixoo connection while rendering idle view (%s).", exc)
                 self.reconnect()
                 return
@@ -166,6 +174,9 @@ class PixooRadarController:
             try:
                 self.handle_same_state_tick(target_state)
             except Exception as exc:
+                if self._is_fatal_weather_error(exc):
+                    LOGGER.error("Fatal weather error: %s", exc)
+                    raise
                 LOGGER.error("Lost Pixoo connection while rendering weather view (%s).", exc)
                 self.reconnect()
                 return
@@ -185,6 +196,6 @@ class PixooRadarController:
         )
 
     def run(self):
-        self.reconnect()
+        self.reconnect(fail_fast=True)
         while True:
             self.run_once()

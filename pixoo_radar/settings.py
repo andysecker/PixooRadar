@@ -1,4 +1,5 @@
 import logging
+import re
 from importlib.util import find_spec
 from dataclasses import dataclass
 from math import isfinite
@@ -35,6 +36,7 @@ class AppSettings:
     weather_view_seconds: int
     weather_wind_speed_unit: str
     weather_metar_icao: str = ""
+    pixoo_startup_connect_timeout_seconds: int = 120
 
 
 def _valid_log_level(level_name: str) -> bool:
@@ -52,6 +54,8 @@ def validate_settings(settings: AppSettings) -> AppSettings:
 
     if int(settings.pixoo_reconnect_seconds) <= 0:
         errors.append("PIXOO_RECONNECT_SECONDS must be > 0.")
+    if int(settings.pixoo_startup_connect_timeout_seconds) <= 0:
+        errors.append("PIXOO_STARTUP_CONNECT_TIMEOUT_SECONDS must be > 0.")
     if int(settings.data_refresh_seconds) <= 0:
         errors.append("DATA_REFRESH_SECONDS must be > 0.")
     if int(settings.no_flight_retry_seconds) <= 0:
@@ -86,6 +90,11 @@ def validate_settings(settings: AppSettings) -> AppSettings:
         errors.append("WEATHER_METAR_ICAO must be a 4-character ICAO station code when set.")
     if settings.weather_metar_icao and find_spec("metar") is None:
         errors.append("WEATHER_METAR_ICAO is set, but dependency 'metar' is not installed. Install with: pip install metar")
+    if str(settings.idle_mode).lower() == "weather" and find_spec("openmeteo_requests") is None:
+        errors.append(
+            "IDLE_MODE is 'weather', but dependency 'openmeteo-requests' is not installed. "
+            "Install with: pip install openmeteo-requests"
+        )
     if not _valid_log_level(settings.log_level):
         errors.append("LOG_LEVEL must be one of DEBUG, INFO, WARNING, ERROR, CRITICAL (or equivalent).")
 
@@ -102,32 +111,38 @@ def validate_settings(settings: AppSettings) -> AppSettings:
 
 
 def load_settings() -> AppSettings:
-    settings = AppSettings(
-        pixoo_ip=app_config.PIXOO_IP,
-        pixoo_port=app_config.PIXOO_PORT,
-        pixoo_reconnect_seconds=app_config.PIXOO_RECONNECT_SECONDS,
-        font_name=app_config.FONT_NAME,
-        font_path=app_config.FONT_PATH,
-        runway_label_font_name=getattr(app_config, "RUNWAY_LABEL_FONT_NAME", app_config.FONT_NAME),
-        runway_label_font_path=getattr(app_config, "RUNWAY_LABEL_FONT_PATH", app_config.FONT_PATH),
-        animation_frame_speed=app_config.ANIMATION_FRAME_SPEED,
-        color_box=app_config.COLOR_BOX,
-        color_text=app_config.COLOR_TEXT,
-        data_refresh_seconds=app_config.DATA_REFRESH_SECONDS,
-        flight_search_radius_meters=app_config.FLIGHT_SEARCH_RADIUS_METERS,
-        flight_speed_unit=app_config.FLIGHT_SPEED_UNIT,
-        latitude=app_config.LATITUDE,
-        longitude=app_config.LONGITUDE,
-        log_level=app_config.LOG_LEVEL,
-        log_verbose_events=app_config.LOG_VERBOSE_EVENTS,
-        logo_dir=app_config.LOGO_DIR,
-        idle_mode=app_config.IDLE_MODE,
-        no_flight_retry_seconds=app_config.NO_FLIGHT_RETRY_SECONDS,
-        no_flight_max_retry_seconds=app_config.NO_FLIGHT_MAX_RETRY_SECONDS,
-        runway_heading_deg=app_config.RUNWAY_HEADING_DEG,
-        weather_refresh_seconds=app_config.WEATHER_REFRESH_SECONDS,
-        weather_view_seconds=app_config.WEATHER_VIEW_SECONDS,
-        weather_wind_speed_unit=app_config.WEATHER_WIND_SPEED_UNIT,
-        weather_metar_icao=getattr(app_config, "WEATHER_METAR_ICAO", ""),
-    )
+    try:
+        settings = AppSettings(
+            pixoo_ip=app_config.PIXOO_IP,
+            pixoo_port=app_config.PIXOO_PORT,
+            pixoo_reconnect_seconds=app_config.PIXOO_RECONNECT_SECONDS,
+            font_name=app_config.FONT_NAME,
+            font_path=app_config.FONT_PATH,
+            runway_label_font_name=getattr(app_config, "RUNWAY_LABEL_FONT_NAME", app_config.FONT_NAME),
+            runway_label_font_path=getattr(app_config, "RUNWAY_LABEL_FONT_PATH", app_config.FONT_PATH),
+            animation_frame_speed=app_config.ANIMATION_FRAME_SPEED,
+            color_box=app_config.COLOR_BOX,
+            color_text=app_config.COLOR_TEXT,
+            data_refresh_seconds=app_config.DATA_REFRESH_SECONDS,
+            flight_search_radius_meters=app_config.FLIGHT_SEARCH_RADIUS_METERS,
+            flight_speed_unit=app_config.FLIGHT_SPEED_UNIT,
+            latitude=app_config.LATITUDE,
+            longitude=app_config.LONGITUDE,
+            log_level=app_config.LOG_LEVEL,
+            log_verbose_events=app_config.LOG_VERBOSE_EVENTS,
+            logo_dir=app_config.LOGO_DIR,
+            idle_mode=app_config.IDLE_MODE,
+            no_flight_retry_seconds=app_config.NO_FLIGHT_RETRY_SECONDS,
+            no_flight_max_retry_seconds=app_config.NO_FLIGHT_MAX_RETRY_SECONDS,
+            runway_heading_deg=app_config.RUNWAY_HEADING_DEG,
+            weather_refresh_seconds=app_config.WEATHER_REFRESH_SECONDS,
+            weather_view_seconds=app_config.WEATHER_VIEW_SECONDS,
+            weather_wind_speed_unit=app_config.WEATHER_WIND_SPEED_UNIT,
+            weather_metar_icao=getattr(app_config, "WEATHER_METAR_ICAO", ""),
+            pixoo_startup_connect_timeout_seconds=getattr(app_config, "PIXOO_STARTUP_CONNECT_TIMEOUT_SECONDS", 120),
+        )
+    except AttributeError as exc:
+        attr_match = re.search(r"has no attribute '([^']+)'", str(exc))
+        missing_attr = attr_match.group(1) if attr_match else str(exc)
+        raise ValueError(f"Invalid configuration:\n- Missing required config setting: {missing_attr}") from exc
     return validate_settings(settings)

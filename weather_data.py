@@ -97,12 +97,30 @@ class WeatherData:
         if self._cache:
             return self._cache, False
 
-        self._cache = self._fallback_payload()
-        self._cache_at = now
-        return self._cache, refreshed
+        raise RuntimeError(f"Weather bootstrap failed: {self._last_error or 'no weather payload available'}")
 
     def get_last_error(self):
         return self._last_error
+
+    def validate_startup_sources(self, require_metar: bool = False):
+        raw = self._fetch_raw()
+        open_meteo = raw.get("open_meteo")
+        condition = open_meteo.get("condition") if isinstance(open_meteo, dict) else None
+        if condition is None:
+            raise RuntimeError("Weather startup validation failed: Open-Meteo condition is unavailable.")
+
+        if require_metar:
+            metar_payload = raw.get("metar")
+            metar_raw = metar_payload.get("raw") if isinstance(metar_payload, dict) else None
+            if not metar_raw:
+                raise RuntimeError(
+                    f"Weather startup validation failed: no METAR raw data returned for {self.metar_icao}."
+                )
+            metar_fields = self.metar_parser(metar_payload)
+            if not isinstance(metar_fields, dict) or not metar_fields:
+                raise RuntimeError(
+                    f"Weather startup validation failed: METAR decode returned no usable fields for {self.metar_icao}."
+                )
 
     def _normalize(self, raw):
         if not isinstance(raw, dict):

@@ -51,3 +51,11 @@ def test_runway_label_font_failure_has_diagnostic_message():
     message = str(exc.value)
     assert "Failed to load runway label font 'runway'" in message
     assert "from 'bad/path.bdf'" in message
+
+
+def test_primary_font_failure_has_diagnostic_message():
+    client = PixooClient(_settings())
+    broken = FakePixoo()
+    broken.load_font = lambda _name, _path: (_ for _ in ()).throw(ValueError("bad font"))
+    with pytest.raises(RuntimeError, match="Failed to load primary font 'main'"):
+        client._load_fonts(broken)

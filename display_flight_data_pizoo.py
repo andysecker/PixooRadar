@@ -8,6 +8,7 @@ import sys
 
 from pixoo_radar.controller import PixooRadarController
 from pixoo_radar.settings import load_settings
+from weather_data import WeatherData
 
 LOGGER = logging.getLogger("pixoo_radar")
 
@@ -33,6 +34,19 @@ def main() -> None:
     configure_logging(settings.log_level, settings.log_verbose_events)
     LOGGER.info("Starting Pixoo Radar.")
 
+    if str(settings.idle_mode).lower() == "weather":
+        try:
+            WeatherData(
+                latitude=settings.latitude,
+                longitude=settings.longitude,
+                refresh_seconds=settings.weather_refresh_seconds,
+                metar_icao=settings.weather_metar_icao,
+            ).validate_startup_sources(require_metar=bool(settings.weather_metar_icao))
+            LOGGER.info("Weather startup validation passed.")
+        except Exception as exc:
+            LOGGER.error("Weather startup validation failed: %s", exc)
+            sys.exit(2)
+
     parser = argparse.ArgumentParser(description="Pixoo Flight Tracker Display")
     parser.add_argument("--caffeinate", action="store_true", help="Prevent macOS from sleeping while tracker runs")
     args = parser.parse_args()
@@ -40,7 +54,11 @@ def main() -> None:
     if args.caffeinate:
         sys.exit(subprocess.call(["caffeinate", "-i", sys.executable, os.path.abspath(__file__)]))
 
-    PixooRadarController(settings).run()
+    try:
+        PixooRadarController(settings).run()
+    except RuntimeError as exc:
+        LOGGER.error("Startup failed: %s", exc)
+        sys.exit(2)
 
 
 if __name__ == "__main__":

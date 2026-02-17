@@ -11,6 +11,9 @@ PIXOO_IP = "192.168.x.x"   # Replace with your Pixoo's IP address
 PIXOO_PORT = 80
 # Reconnect delay (seconds) when Pixoo is unreachable or drops from network.
 PIXOO_RECONNECT_SECONDS = 60
+# Hard startup timeout (seconds) for first Pixoo connection attempt.
+# App exits if initial connection cannot be established in this window.
+PIXOO_STARTUP_CONNECT_TIMEOUT_SECONDS = 120
 
 # =============================================================================
 # Location for Flight Tracking

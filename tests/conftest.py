@@ -10,6 +10,7 @@ if "config" not in sys.modules:
     config.PIXOO_IP = "127.0.0.1"
     config.PIXOO_PORT = 80
     config.PIXOO_RECONNECT_SECONDS = 5
+    config.PIXOO_STARTUP_CONNECT_TIMEOUT_SECONDS = 30
     config.FONT_NAME = "splitflap"
     config.FONT_PATH = "./fonts/splitflap.bdf"
     config.RUNWAY_LABEL_FONT_NAME = "splitflap"

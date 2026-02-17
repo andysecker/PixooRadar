@@ -1,6 +1,6 @@
 import pytest
 
-from pixoo_radar.settings import AppSettings, validate_settings
+from pixoo_radar.settings import AppSettings, load_settings, validate_settings
 
 
 def _base_settings():
@@ -81,3 +81,27 @@ def test_validate_settings_rejects_missing_metar_dependency_when_icao_set(monkey
     settings = AppSettings(**{**settings.__dict__, "weather_metar_icao": "LCPH"})
     with pytest.raises(ValueError, match="dependency 'metar' is not installed"):
         validate_settings(settings)
+
+
+def test_validate_settings_rejects_invalid_startup_connect_timeout():
+    settings = _base_settings()
+    settings = AppSettings(**{**settings.__dict__, "pixoo_startup_connect_timeout_seconds": 0})
+    with pytest.raises(ValueError, match="PIXOO_STARTUP_CONNECT_TIMEOUT_SECONDS"):
+        validate_settings(settings)
+
+
+def test_validate_settings_rejects_missing_openmeteo_dependency_when_weather_idle(monkeypatch):
+    import pixoo_radar.settings as settings_module
+
+    monkeypatch.setattr(settings_module, "find_spec", lambda name: None if name == "openmeteo_requests" else object())
+    settings = _base_settings()
+    with pytest.raises(ValueError, match="openmeteo-requests"):
+        validate_settings(settings)
+
+
+def test_load_settings_reports_missing_required_config(monkeypatch):
+    import pixoo_radar.settings as settings_module
+
+    monkeypatch.delattr(settings_module.app_config, "PIXOO_IP", raising=False)
+    with pytest.raises(ValueError, match="Missing required config setting: PIXOO_IP"):
+        load_settings()
