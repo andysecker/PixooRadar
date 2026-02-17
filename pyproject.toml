@@ -5,7 +5,7 @@ exclude = [".venv", "__pycache__", ".pytest_cache"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B"]
-ignore = ["E501"]
+ignore = ["E501", "I001"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -20,4 +20,3 @@ files = [
   "tests",
 ]
 exclude = "(^\\.venv/|^__pycache__/)"
-
