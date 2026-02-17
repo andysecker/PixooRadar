@@ -103,7 +103,6 @@ Operational behavior:
 - `pixoo_radar/flight/provider.py`: FlightRadar24 provider adapter
 - `pixoo_radar/flight/filters.py`: candidate filtering and closest-flight selection
 - `pixoo_radar/flight/mapping.py`: payload mapping helpers
-- `pixoo_radar/flight/metar.py`: METAR fetch utility
 - `pixoo_radar/flight/logos.py`: logo cache/resize handling
 - `pixoo_radar/services/pixoo_client.py`: Pixoo connect/reconnect/reachability/font loading
 - `pixoo_radar/services/flight_service.py`: flight service wrapper
@@ -121,7 +120,7 @@ Operational behavior:
   display_flight_data_pizoo.py flight_data.py weather_data.py \
   pixoo_radar/settings.py pixoo_radar/models.py pixoo_radar/controller.py \
   pixoo_radar/flight/provider.py pixoo_radar/flight/filters.py \
-  pixoo_radar/flight/mapping.py pixoo_radar/flight/metar.py \
+  pixoo_radar/flight/mapping.py \
   pixoo_radar/flight/logos.py \
   pixoo_radar/render/common.py pixoo_radar/render/flight_view.py \
   pixoo_radar/render/weather_view.py pixoo_radar/render/holding_view.py \
@@ -144,14 +143,15 @@ Current tests cover:
 - settings validation (units, ranges, timings, font paths)
 - Pixoo runway-label font diagnostic error messaging
 
-## CI Gates
+## Validation Workflow
 
-GitHub Actions runs on every push/PR:
+This project currently uses local validation rather than hosted CI.
 
-- `py_compile` on all tracked Python files
-- `ruff check .`
-- `mypy`
-- `pytest -q`
+- Recommended check before pushing: `.venv/bin/python -m pytest -q`
+- Optional stricter checks remain available locally:
+  - `.venv/bin/python -m py_compile $(git ls-files '*.py')`
+  - `.venv/bin/python -m ruff check .`
+  - `.venv/bin/python -m mypy`
 
 ## Notes
 

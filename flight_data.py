@@ -13,7 +13,6 @@ from config import API_RATE_LIMIT_COOLDOWN_SECONDS, FLIGHT_SEARCH_RADIUS_METERS,
 from pixoo_radar.flight.filters import choose_closest_flight, haversine_km
 from pixoo_radar.flight.logos import LogoManager
 from pixoo_radar.flight.mapping import build_flight_payload
-from pixoo_radar.flight.metar import fetch_metar_report
 from pixoo_radar.flight.provider import FlightRadarProvider
 
 
@@ -25,12 +24,10 @@ class FlightData:
         save_logo_dir: str | None = None,
         fr_api=None,
         provider=None,
-        metar_fetcher=None,
         logo_manager: LogoManager | None = None,
     ):
         self.provider = provider or FlightRadarProvider(fr_api=fr_api, search_radius_meters=FLIGHT_SEARCH_RADIUS_METERS)
         self.logo_manager = logo_manager or LogoManager(save_logo_dir=save_logo_dir, bg_color=LOGO_BG_COLOR)
-        self.metar_fetcher = metar_fetcher or fetch_metar_report
         self._api_cooldown_until = 0.0
         self._last_api_error = None
 
@@ -134,11 +131,6 @@ class FlightData:
 
         flight_data = build_flight_payload(closest_flight, details)
 
-        try:
-            flight_data["destination_metar"] = self.metar_fetcher(flight_data.get("destination_icao"))
-        except Exception:
-            flight_data["destination_metar"] = None
-
         if save_logo and self.logo_manager:
             try:
                 logo_path = self.logo_manager.resolve_or_fetch_logo(
@@ -160,4 +152,3 @@ if __name__ == "__main__":
     fd = FlightData(save_logo_dir=LOGO_DIR)
     data = fd.get_closest_flight_data(LATITUDE, LONGITUDE)
     print(json.dumps(data, indent=4))
-

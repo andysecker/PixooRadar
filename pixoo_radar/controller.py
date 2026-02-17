@@ -137,15 +137,16 @@ class PixooRadarController:
                     return
                 LOGGER.info("Still tracking %s; telemetry changed, updating animation.", data.get("flight_number"))
 
-            self.current_flight_id = new_flight_id
-            self.current_flight_signature = new_signature
-            LOGGER.info("New flight: %s (%s -> %s).", data.get("flight_number"), data.get("origin"), data.get("destination"))
-            try:
-                build_and_send_animation(self.pizzoo, self.settings, data)
-            except Exception as exc:
-                LOGGER.error("Lost Pixoo connection while rendering flight view (%s).", exc)
-                self.reconnect()
-                return
+                self.current_flight_id = new_flight_id
+                self.current_flight_signature = new_signature
+                LOGGER.info("New flight: %s (%s -> %s).", data.get("flight_number"), data.get("origin"), data.get("destination"))
+                LOGGER.info("Flight raw payload: %s", data)
+                try:
+                    build_and_send_animation(self.pizzoo, self.settings, data)
+                except Exception as exc:
+                    LOGGER.error("Lost Pixoo connection while rendering flight view (%s).", exc)
+                    self.reconnect()
+                    return
             LOGGER.info("Animation playing. Next check in %ss.", self.settings.data_refresh_seconds)
             self.sleep_fn(self.settings.data_refresh_seconds)
             return
