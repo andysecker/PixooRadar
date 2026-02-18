@@ -1,12 +1,13 @@
 import logging
 
+from .common import dump_render_debug_gif, ensure_clean_render_buffer
 from .flight_view import draw_info_page, draw_top_section
-from .common import dump_render_debug_gif
 
 LOGGER = logging.getLogger("pixoo_radar")
 
 
 def build_and_send_holding_screen(pizzoo, settings, status: str = "NO FLIGHTS") -> None:
+    ensure_clean_render_buffer(pizzoo)
     radius_km = max(1, int(round(settings.flight_search_radius_meters / 1000)))
     range_text = f"{radius_km}KM"
 

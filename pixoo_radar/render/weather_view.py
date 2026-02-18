@@ -7,6 +7,7 @@ from .common import (
     draw_line,
     draw_px,
     dump_render_debug_gif,
+    ensure_clean_render_buffer,
     fit_text,
     format_humidity,
     format_temp_c,
@@ -187,6 +188,7 @@ def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg:
 
 
 def build_and_send_weather_idle_screen(pizzoo, settings, weather: dict) -> None:
+    ensure_clean_render_buffer(pizzoo)
     draw_weather_summary_frame(pizzoo, settings, weather)
     pizzoo.add_frame()
     draw_runway_wind_diagram(

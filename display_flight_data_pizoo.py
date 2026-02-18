@@ -37,14 +37,22 @@ class DemoFlightService:
         speed = 220 + ((self._tick % 8) * 7)
         altitude = min(39000, 1200 + (self._tick * 850))
         heading = (95 + (self._tick * 3)) % 360
+        if self._tick % 2 == 0:
+            aircraft_type = "Airbus A320"
+            aircraft_type_icao = "A320"
+        else:
+            aircraft_type = "Antonov An-32"
+            aircraft_type_icao = "AN32"
         payload = {
             "icao24": "TEST123",
+            "callsign": "GAF001",
             "flight_number": "GAF001",
             "origin": "ETAR",
             "destination": "LCPH",
             "airline": "Germany - Air Force",
             "registration": "10+01",
-            "aircraft_type_icao": "A400",
+            "aircraft_type": aircraft_type,
+            "aircraft_type_icao": aircraft_type_icao,
             "altitude": altitude,
             "ground_speed": speed,
             "heading": heading,

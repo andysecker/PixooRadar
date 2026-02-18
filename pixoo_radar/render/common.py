@@ -191,3 +191,21 @@ def dump_render_debug_gif(pizzoo, frame_speed: int, output_path: Path = DEBUG_RE
     )
     LOGGER.info("Saved render debug GIF: %s (%s frames)", output_path, len(images))
     return True
+
+
+def ensure_clean_render_buffer(pizzoo) -> None:
+    """
+    Reset render buffer before drawing to avoid frame accumulation after failures.
+
+    The upstream `pizzoo` object can retain buffered frames if `render()` fails
+    before it resets internal state.
+    """
+    reset_buffer = getattr(pizzoo, "reset_buffer", None)
+    if not callable(reset_buffer):
+        return
+    try:
+        removed = int(reset_buffer())
+    except Exception:  # noqa: BLE001
+        return
+    if removed > 1:
+        LOGGER.warning("Recovered stale Pixoo frame buffer before render (%s old frames removed).", removed)
