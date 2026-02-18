@@ -2,7 +2,7 @@
 
 import logging
 import re
-from math import exp
+from math import ceil, exp
 from time import monotonic
 
 from pixoo_radar.flight.metar import fetch_metar_report
@@ -102,6 +102,16 @@ class WeatherData:
 
     def get_last_error(self):
         return self._last_error
+
+    def seconds_until_refresh(self) -> int:
+        """Return seconds remaining until next weather API refresh is due."""
+        if not self._cache:
+            return 0
+        age = monotonic() - self._cache_at
+        remaining = self.refresh_seconds - age
+        if remaining <= 0:
+            return 0
+        return int(ceil(remaining))
 
     def validate_startup_sources(self, require_metar: bool = False):
         raw = self._fetch_raw()

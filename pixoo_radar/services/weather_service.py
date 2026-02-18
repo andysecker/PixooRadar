@@ -22,5 +22,8 @@ class WeatherService:
     def get_last_error(self):
         return self._client.get_last_error()
 
+    def seconds_until_refresh(self) -> int:
+        return self._client.seconds_until_refresh()
+
     def validate_startup_sources(self, require_metar: bool = False):
         self._client.validate_startup_sources(require_metar=require_metar)

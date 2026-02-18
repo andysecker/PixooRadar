@@ -1,3 +1,5 @@
+from time import monotonic
+
 from weather_data import WeatherData
 
 
@@ -30,3 +32,16 @@ def test_weather_cache_and_force_refresh():
     assert refreshed2 is False
     assert refreshed3 is True
     assert provider.calls == 2
+
+
+def test_weather_seconds_until_refresh_reports_countdown():
+    provider = Provider()
+    wx = WeatherData(latitude=1.0, longitude=1.0, refresh_seconds=900, provider=provider)
+
+    assert wx.seconds_until_refresh() == 0
+    wx.get_current()
+    remaining = wx.seconds_until_refresh()
+    assert 1 <= remaining <= 900
+
+    wx._cache_at = monotonic() - 901
+    assert wx.seconds_until_refresh() == 0

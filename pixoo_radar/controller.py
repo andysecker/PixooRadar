@@ -69,6 +69,15 @@ class PixooRadarController:
         msg = str(exc)
         return msg.startswith("Weather bootstrap failed:") or msg.startswith("Weather startup validation failed:")
 
+    def _weather_seconds_until_refresh(self) -> int:
+        seconds_until_refresh = getattr(self.weather_service, "seconds_until_refresh", None)
+        if callable(seconds_until_refresh):
+            try:
+                return max(0, int(seconds_until_refresh()))
+            except Exception:  # noqa: BLE001
+                pass
+        return int(self.settings.weather_refresh_seconds)
+
     def reconnect(self, fail_fast: bool = False):
         self.pizzoo = self.pixoo_service.connect_with_retry(fail_fast=fail_fast)
         self.reset_tracking()
@@ -85,9 +94,11 @@ class PixooRadarController:
             else:
                 LOGGER.info("Weather updated from API (%s).", weather_snapshot.source or "unknown source")
         else:
+            next_update_seconds = self._weather_seconds_until_refresh()
             LOGGER.info(
-                "Weather refresh skipped (cache still valid; interval %ss).",
+                "Weather refresh skipped (cache still valid; interval %ss, next update in %ss).",
                 self.settings.weather_refresh_seconds,
+                next_update_seconds,
             )
         build_and_send_weather_idle_screen(self.pizzoo, self.settings, weather_snapshot.payload)
         self.current_state = target_state
@@ -103,9 +114,11 @@ class PixooRadarController:
                     LOGGER.info("Weather updated from API (%s).", weather_snapshot.source or "unknown source")
                 build_and_send_weather_idle_screen(self.pizzoo, self.settings, weather_snapshot.payload)
             else:
+                next_update_seconds = self._weather_seconds_until_refresh()
                 LOGGER.info(
-                    "Weather refresh skipped (cache still valid; interval %ss).",
+                    "Weather refresh skipped (cache still valid; interval %ss, next update in %ss).",
                     self.settings.weather_refresh_seconds,
+                    next_update_seconds,
                 )
 
     def run_once(self):
