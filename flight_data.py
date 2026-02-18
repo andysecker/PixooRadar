@@ -5,14 +5,37 @@ Facade for fetching closest-flight payloads while delegating to componentized
 provider/filter/logo/METAR modules.
 """
 
-import re
-from time import monotonic
+import json
+import logging
 
-from config import API_RATE_LIMIT_COOLDOWN_SECONDS, FLIGHT_SEARCH_RADIUS_METERS, LOGO_BG_COLOR
+from config import FLIGHT_SEARCH_RADIUS_METERS, LOGO_BG_COLOR
 from pixoo_radar.flight.filters import choose_closest_flight
 from pixoo_radar.flight.logos import LogoManager
 from pixoo_radar.flight.mapping import build_flight_payload
 from pixoo_radar.flight.provider import FlightRadarProvider
+
+LOGGER = logging.getLogger("pixoo_radar.flight")
+
+
+def _loggable(value, depth: int = 0):
+    if depth > 6:
+        return "<max-depth>"
+    if isinstance(value, dict):
+        return {key: _loggable(val, depth + 1) for key, val in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_loggable(item, depth + 1) for item in value]
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    if hasattr(value, "__dict__"):
+        return {key: _loggable(val, depth + 1) for key, val in vars(value).items()}
+    return repr(value)
+
+
+def _to_log_json(value) -> str:
+    try:
+        return json.dumps(_loggable(value), sort_keys=True)
+    except Exception:
+        return repr(value)
 
 
 class FlightData:
@@ -27,94 +50,32 @@ class FlightData:
     ):
         self.provider = provider or FlightRadarProvider(fr_api=fr_api, search_radius_meters=FLIGHT_SEARCH_RADIUS_METERS)
         self.logo_manager = logo_manager or LogoManager(save_logo_dir=save_logo_dir, bg_color=LOGO_BG_COLOR)
-        self._api_cooldown_until = 0.0
-        self._last_api_error = None
-
-    def get_api_cooldown_remaining(self) -> int:
-        """Return remaining API cooldown seconds if rate-limited, else 0."""
-        return max(0, int(self._api_cooldown_until - monotonic()))
-
-    def get_last_api_error(self) -> str | None:
-        """Return latest API-related error message, if any."""
-        return self._last_api_error
-
-    @staticmethod
-    def _extract_status_code(exc: Exception):
-        response = getattr(exc, "response", None)
-        status = getattr(response, "status_code", None)
-        if isinstance(status, int):
-            return status
-        status = getattr(exc, "status_code", None)
-        if isinstance(status, int):
-            return status
-
-        message = str(exc).lower()
-        if "429" in message and ("too many" in message or "rate" in message):
-            return 429
-        return None
-
-    @classmethod
-    def _is_rate_limited_error(cls, exc: Exception) -> bool:
-        if cls._extract_status_code(exc) == 429:
-            return True
-        message = str(exc).lower()
-        return "rate limit" in message or "too many requests" in message
-
-    @staticmethod
-    def _extract_retry_after_seconds(exc: Exception) -> int:
-        response = getattr(exc, "response", None)
-        if response is not None:
-            headers = getattr(response, "headers", {}) or {}
-            retry_after = headers.get("Retry-After")
-            if retry_after:
-                try:
-                    return max(1, int(retry_after))
-                except (TypeError, ValueError):
-                    pass
-
-        match = re.search(r"retry\s*after\s*(\d+)", str(exc), flags=re.IGNORECASE)
-        if match:
-            return max(1, int(match.group(1)))
-
-        return API_RATE_LIMIT_COOLDOWN_SECONDS
-
-    def _set_api_cooldown(self, seconds: int, reason: str) -> None:
-        cooldown_seconds = max(1, int(seconds))
-        self._api_cooldown_until = monotonic() + cooldown_seconds
-        self._last_api_error = reason
 
     def _find_closest(self, lat, lon):
-        if self.get_api_cooldown_remaining() > 0:
-            return None, None
-
         try:
             flights = self.provider.get_flights_near(lat, lon)
         except Exception as exc:
-            if self._is_rate_limited_error(exc):
-                retry_after = self._extract_retry_after_seconds(exc)
-                self._set_api_cooldown(retry_after, f"Rate-limited while fetching flights: {exc}")
-            else:
-                self._last_api_error = f"Flight fetch error: {exc}"
+            LOGGER.warning("Flight fetch failed: %s", exc)
             return None, None
 
         if not flights:
+            LOGGER.info("Flight API returned no candidates in search area.")
             return None, None
 
         closest_flight = choose_closest_flight(flights, lat, lon)
         if not closest_flight:
-            self._last_api_error = None
+            LOGGER.info("No usable flight candidate after filtering.")
             return None, None
 
+        if LOGGER.isEnabledFor(logging.DEBUG):
+            LOGGER.debug("Flight API selected flight raw: %s", _to_log_json(closest_flight))
         try:
             details = self.provider.get_flight_details(closest_flight)
-            self._last_api_error = None
+            if LOGGER.isEnabledFor(logging.DEBUG):
+                LOGGER.debug("Flight API details raw: %s", _to_log_json(details))
             return closest_flight, details
         except Exception as exc:
-            if self._is_rate_limited_error(exc):
-                retry_after = self._extract_retry_after_seconds(exc)
-                self._set_api_cooldown(retry_after, f"Rate-limited while fetching flight details: {exc}")
-            else:
-                self._last_api_error = f"Flight details error: {exc}"
+            LOGGER.warning("Flight details fetch failed for %s: %s", getattr(closest_flight, "icao", "unknown"), exc)
             return closest_flight, None
 
     def get_closest_flight_data(self, lat, lon, save_logo: bool = True):
