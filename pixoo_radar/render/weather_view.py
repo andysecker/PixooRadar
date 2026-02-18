@@ -51,7 +51,7 @@ def nearest_drawn_tick_bearing(wind_dir_deg):
     wind_dir = normalize_wind_dir_deg(wind_dir_deg)
     if wind_dir is None:
         return None
-    tick_bearings = range(10, 360, 10)
+    tick_bearings = range(0, 360, 10)
     return min(tick_bearings, key=lambda b: abs(signed_angle_diff_deg(wind_dir, float(b))))
 
 
@@ -140,8 +140,6 @@ def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg:
         highlighted_ticks.add(to_tick)
 
     for b in range(0, 360, 10):
-        if b == 0:
-            continue
         x1, y1 = bearing_to_xy(cx, cy, b, 28)
         x2, y2 = bearing_to_xy(cx, cy, b, 30)
         tick_color = COLOR_WIND_ARROW if b in highlighted_ticks else COLOR_WX_ACCENT
