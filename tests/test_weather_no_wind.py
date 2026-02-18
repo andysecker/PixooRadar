@@ -23,8 +23,6 @@ def _settings():
         log_level="INFO",
         log_verbose_events=True,
         logo_dir="airline_logos",
-        no_flight_retry_seconds=15,
-        no_flight_max_retry_seconds=120,
         runway_heading_deg=110,
         weather_refresh_seconds=900,
         weather_view_seconds=10,

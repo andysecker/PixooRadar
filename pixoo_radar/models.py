@@ -5,8 +5,6 @@ from enum import Enum
 class RenderState(str, Enum):
     FLIGHT_ACTIVE = "flight_active"
     IDLE_WEATHER = "idle_weather"
-    RATE_LIMIT = "rate_limit"
-    API_ERROR = "api_error"
 
 
 @dataclass(frozen=True)

@@ -11,9 +11,3 @@ class FlightService:
         if not payload:
             return None
         return FlightSnapshot.from_dict(payload)
-
-    def get_api_cooldown_remaining(self) -> int:
-        return self._client.get_api_cooldown_remaining()
-
-    def get_last_api_error(self):
-        return self._client.get_last_api_error()

@@ -28,8 +28,6 @@ class AppSettings:
     log_level: str
     log_verbose_events: bool
     logo_dir: str
-    no_flight_retry_seconds: int
-    no_flight_max_retry_seconds: int
     runway_heading_deg: float
     weather_refresh_seconds: int
     weather_view_seconds: int
@@ -57,10 +55,6 @@ def validate_settings(settings: AppSettings) -> AppSettings:
         errors.append("PIXOO_STARTUP_CONNECT_TIMEOUT_SECONDS must be > 0.")
     if int(settings.data_refresh_seconds) <= 0:
         errors.append("DATA_REFRESH_SECONDS must be > 0.")
-    if int(settings.no_flight_retry_seconds) <= 0:
-        errors.append("NO_FLIGHT_RETRY_SECONDS must be > 0.")
-    if int(settings.no_flight_max_retry_seconds) < int(settings.no_flight_retry_seconds):
-        errors.append("NO_FLIGHT_MAX_RETRY_SECONDS must be >= NO_FLIGHT_RETRY_SECONDS.")
     if int(settings.weather_refresh_seconds) <= 0:
         errors.append("WEATHER_REFRESH_SECONDS must be > 0.")
     if int(settings.weather_view_seconds) <= 0:
@@ -109,8 +103,6 @@ def validate_settings(settings: AppSettings) -> AppSettings:
 
 def load_settings() -> AppSettings:
     try:
-        no_flight_retry_seconds = getattr(app_config, "NO_FLIGHT_RETRY_SECONDS", app_config.DATA_REFRESH_SECONDS)
-        no_flight_max_retry_seconds = getattr(app_config, "NO_FLIGHT_MAX_RETRY_SECONDS", no_flight_retry_seconds)
         settings = AppSettings(
             pixoo_ip=app_config.PIXOO_IP,
             pixoo_port=app_config.PIXOO_PORT,
@@ -130,8 +122,6 @@ def load_settings() -> AppSettings:
             log_level=app_config.LOG_LEVEL,
             log_verbose_events=app_config.LOG_VERBOSE_EVENTS,
             logo_dir=app_config.LOGO_DIR,
-            no_flight_retry_seconds=no_flight_retry_seconds,
-            no_flight_max_retry_seconds=no_flight_max_retry_seconds,
             runway_heading_deg=app_config.RUNWAY_HEADING_DEG,
             weather_refresh_seconds=app_config.WEATHER_REFRESH_SECONDS,
             weather_view_seconds=app_config.WEATHER_VIEW_SECONDS,

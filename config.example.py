@@ -43,14 +43,6 @@ LOGO_DIR = "airline_logos"
 # How often to fetch new flight data (in seconds)
 DATA_REFRESH_SECONDS = 60
 
-# Retry timing when no flights are found
-# First retry delay in seconds; delay doubles on consecutive misses up to max.
-NO_FLIGHT_RETRY_SECONDS = 15
-NO_FLIGHT_MAX_RETRY_SECONDS = 120
-
-# Default cooldown (seconds) when API rate-limit response does not provide Retry-After.
-API_RATE_LIMIT_COOLDOWN_SECONDS = 300
-
 # Weather refresh interval while in idle weather mode (seconds).
 # 900s = 15 minutes.
 WEATHER_REFRESH_SECONDS = 900

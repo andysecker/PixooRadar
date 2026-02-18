@@ -23,8 +23,6 @@ def _settings(data_refresh_seconds=60):
         log_level="INFO",
         log_verbose_events=True,
         logo_dir="airline_logos",
-        no_flight_retry_seconds=15,
-        no_flight_max_retry_seconds=120,
         runway_heading_deg=110,
         weather_refresh_seconds=900,
         weather_view_seconds=10,
@@ -46,19 +44,11 @@ class FakePixooService:
 
 
 class FakeFlightService:
-    def __init__(self, snapshot=None, cooldown=0, error=None):
+    def __init__(self, snapshot=None):
         self.snapshot = snapshot
-        self.cooldown = cooldown
-        self.error = error
 
     def get_closest_flight(self, latitude, longitude):
         return self.snapshot
-
-    def get_api_cooldown_remaining(self):
-        return self.cooldown
-
-    def get_last_api_error(self):
-        return self.error
 
 
 class FakeWeatherService:
@@ -136,12 +126,12 @@ def test_run_once_uses_injected_sleep_for_unchanged_flight():
     assert controller.last_cycle_started_at == 123.456
 
 
-def test_run_once_no_flight_backoff_uses_injected_sleep():
+def test_run_once_no_flight_uses_fixed_poll_interval_sleep():
     sleeps = []
     controller = PixooRadarController(
         _settings(),
         pixoo_service=FakePixooService(reachable=True),
-        flight_service=FakeFlightService(snapshot=None, cooldown=0, error=None),
+        flight_service=FakeFlightService(snapshot=None),
         weather_service=FakeWeatherService(),
         sleep_fn=sleeps.append,
         clock_fn=lambda: 1.0,
@@ -151,5 +141,4 @@ def test_run_once_no_flight_backoff_uses_injected_sleep():
     controller.run_once()
 
     assert controller.current_state == RenderState.IDLE_WEATHER
-    assert sleeps == [15]
-    assert controller.no_data_retry_seconds == 30
+    assert sleeps == [60]

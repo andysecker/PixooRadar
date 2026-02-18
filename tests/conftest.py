@@ -4,7 +4,6 @@ import types
 
 if "config" not in sys.modules:
     config = types.ModuleType("config")
-    config.API_RATE_LIMIT_COOLDOWN_SECONDS = 300
     config.FLIGHT_SEARCH_RADIUS_METERS = 50000
     config.LOGO_BG_COLOR = (186, 186, 186, 255)
     config.PIXOO_IP = "127.0.0.1"
@@ -25,8 +24,6 @@ if "config" not in sys.modules:
     config.LOG_LEVEL = "INFO"
     config.LOG_VERBOSE_EVENTS = True
     config.LOGO_DIR = "airline_logos"
-    config.NO_FLIGHT_RETRY_SECONDS = 15
-    config.NO_FLIGHT_MAX_RETRY_SECONDS = 120
     config.RUNWAY_HEADING_DEG = 110
     config.WEATHER_REFRESH_SECONDS = 900
     config.WEATHER_METAR_ICAO = ""
