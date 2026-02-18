@@ -23,7 +23,7 @@ Two-frame weather loop (frame duration configurable):
 - Temperature
 - Condition
 - Humidity
-- Wind (direction + speed)
+- Wind (direction + speed, with gusts when available)
 
 2. Runway wind diagram
 - Runway drawn at your configured heading
@@ -77,7 +77,7 @@ All runtime settings are in `config.py`.
 - METAR source: `WEATHER_METAR_ICAO` (4-letter ICAO; blank disables METAR fields)
 - Units: `FLIGHT_SPEED_UNIT` (`mph` or `kt`), `WEATHER_WIND_SPEED_UNIT` (`mph` or `kmh`; legacy `kph` accepted)
 - Fonts: `FONT_NAME`, `FONT_PATH`, optional `RUNWAY_LABEL_FONT_NAME`, `RUNWAY_LABEL_FONT_PATH`
-- Logging: `LOG_LEVEL`, `LOG_VERBOSE_EVENTS`, `LOG_TO_FILE`, `LOG_FILE_PATH`, `LOG_FILE_BACKUP_DAYS`
+- Logging: `LOG_LEVEL`, `LOG_VERBOSE_EVENTS`
 - Startup validates config values and file paths and exits with clear errors if invalid.
 - Startup validates weather sources by fetching Open-Meteo (and METAR when configured) before entering the main loop.
 - If `WEATHER_METAR_ICAO` is set, startup also hard-fails unless dependency `metar` is installed.
@@ -93,7 +93,8 @@ Operational behavior:
 
 - Flight view is re-rendered when tracked flight telemetry changes (altitude, speed, heading, status).
 - Stationary ground targets are filtered out (`altitude<=0` and `ground_speed<=0`).
-- Flight API is polled on a fixed interval (`DATA_REFRESH_SECONDS`) regardless of no-flight periods.
+- Flight API is polled on a fixed interval (`DATA_REFRESH_SECONDS`) for all flight polling.
+- No exponential backoff is used for no-flight periods.
 - If Pixoo is offline, flight/weather API polling is paused until reconnect succeeds.
 - Weather refresh logs include both raw provider payloads (Open-Meteo + METAR) and normalized payload.
 - Each API call logs immediate raw return data:
@@ -101,7 +102,10 @@ Operational behavior:
   - `METAR raw response (ICAO): ...`
 - METAR raw string is logged on every weather refresh.
 - FlightRadar selected-flight/details raw payload dumps are available at `DEBUG` level only (to avoid very large `INFO` logs).
-- Logging can be written to both console and disk with daily rotation (`TimedRotatingFileHandler`).
+- Weather wind line format:
+  - non-gusting: e.g. `NE 10Mph`
+  - gusting: e.g. `NE 10/18`
+  - unknown direction: `--`
 - On runway weather view, if METAR provides variable wind sector (`dddVddd`), nearest boundary tick marks are highlighted in orange.
 
 ## Refactored Architecture
@@ -109,7 +113,7 @@ Operational behavior:
 - `display_flight_data_pizoo.py`: bootstrap entrypoint
 - `pixoo_radar/settings.py`: typed `AppSettings` loaded from `config.py`
 - `pixoo_radar/models.py`: `FlightSnapshot`, `WeatherSnapshot`, `RenderState`
-- `pixoo_radar/controller.py`: polling loop, transitions, retry handling
+- `pixoo_radar/controller.py`: polling loop and state transitions
 - `pixoo_radar/flight/provider.py`: FlightRadar24 provider adapter
 - `pixoo_radar/flight/filters.py`: candidate filtering and closest-flight selection
 - `pixoo_radar/flight/mapping.py`: payload mapping helpers
