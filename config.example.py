@@ -68,8 +68,8 @@ WEATHER_WIND_SPEED_UNIT = "mph"
 # =============================================================================
 FONT_NAME = "splitflap"
 FONT_PATH = "./fonts/splitflap.bdf"
-# Optional secondary font for active runway label in weather runway view.
-# Set equal to FONT_NAME/FONT_PATH to use a single font everywhere.
+# Required font used for active runway label in weather runway view.
+# Use a small/pixel font to keep runway numbers legible.
 RUNWAY_LABEL_FONT_NAME = "splitflap"
 RUNWAY_LABEL_FONT_PATH = "./fonts/splitflap.bdf"
 

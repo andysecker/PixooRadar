@@ -88,3 +88,11 @@ def test_load_settings_reports_missing_required_config(monkeypatch):
     monkeypatch.delattr(settings_module.app_config, "PIXOO_IP", raising=False)
     with pytest.raises(ValueError, match="Missing required config setting: PIXOO_IP"):
         load_settings()
+
+
+def test_load_settings_reports_missing_required_runway_label_font_config(monkeypatch):
+    import pixoo_radar.settings as settings_module
+
+    monkeypatch.delattr(settings_module.app_config, "RUNWAY_LABEL_FONT_NAME", raising=False)
+    with pytest.raises(ValueError, match="Missing required config setting: RUNWAY_LABEL_FONT_NAME"):
+        load_settings()

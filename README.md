@@ -29,7 +29,7 @@ Two-frame weather loop (frame duration configurable):
 - Runway drawn at your configured heading
 - Wind arrow overlaid by current wind direction
 - Active runway direction arrow (green), selected from wind/runway alignment
-- Active runway designator label near the green arrow (optional micro-font)
+- Active runway designator label near the green arrow (requires runway label font config)
 - North marker at top of the compass ring
 
 ## Data Sources
@@ -76,7 +76,7 @@ All runtime settings are in `config.py`.
 - Idle weather: `WEATHER_REFRESH_SECONDS`, `WEATHER_VIEW_SECONDS`, `RUNWAY_HEADING_DEG`
 - METAR source: `WEATHER_METAR_ICAO` (4-letter ICAO; blank disables METAR fields)
 - Units: `FLIGHT_SPEED_UNIT` (`mph` or `kt`), `WEATHER_WIND_SPEED_UNIT` (`mph` or `kmh`; legacy `kph` accepted)
-- Fonts: `FONT_NAME`, `FONT_PATH`, optional `RUNWAY_LABEL_FONT_NAME`, `RUNWAY_LABEL_FONT_PATH`
+- Fonts: `FONT_NAME`, `FONT_PATH`, `RUNWAY_LABEL_FONT_NAME`, `RUNWAY_LABEL_FONT_PATH` (required)
 - Logging: `LOG_LEVEL`, `LOG_VERBOSE_EVENTS`
 - Startup validates config values and file paths and exits with clear errors if invalid.
 - Startup validates weather sources by fetching Open-Meteo (and METAR when configured) before entering the main loop.
