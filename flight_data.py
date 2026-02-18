@@ -7,6 +7,7 @@ provider/filter/logo/METAR modules.
 
 import json
 import logging
+from time import monotonic
 
 from config import FLIGHT_SEARCH_RADIUS_METERS, LOGO_BG_COLOR
 from pixoo_radar.flight.filters import choose_closest_flight
@@ -50,20 +51,37 @@ class FlightData:
     ):
         self.provider = provider or FlightRadarProvider(fr_api=fr_api, search_radius_meters=FLIGHT_SEARCH_RADIUS_METERS)
         self.logo_manager = logo_manager or LogoManager(save_logo_dir=save_logo_dir, bg_color=LOGO_BG_COLOR)
+        # Compatibility with controller/flight service cooldown interface.
+        self._api_cooldown_until = 0.0
+        self._last_api_error = None
+
+    def get_api_cooldown_remaining(self) -> int:
+        """Return remaining API cooldown in seconds (0 when not cooling down)."""
+        return max(0, int(self._api_cooldown_until - monotonic()))
+
+    def get_last_api_error(self):
+        """Return latest flight API error string, or None."""
+        return self._last_api_error
 
     def _find_closest(self, lat, lon):
+        if self.get_api_cooldown_remaining() > 0:
+            return None, None
+
         try:
             flights = self.provider.get_flights_near(lat, lon)
         except Exception as exc:
+            self._last_api_error = f"Flight fetch failed: {exc}"
             LOGGER.warning("Flight fetch failed: %s", exc)
             return None, None
 
         if not flights:
+            self._last_api_error = None
             LOGGER.info("Flight API returned no candidates in search area.")
             return None, None
 
         closest_flight = choose_closest_flight(flights, lat, lon)
         if not closest_flight:
+            self._last_api_error = None
             LOGGER.info("No usable flight candidate after filtering.")
             return None, None
 
@@ -71,10 +89,12 @@ class FlightData:
             LOGGER.debug("Flight API selected flight raw: %s", _to_log_json(closest_flight))
         try:
             details = self.provider.get_flight_details(closest_flight)
+            self._last_api_error = None
             if LOGGER.isEnabledFor(logging.DEBUG):
                 LOGGER.debug("Flight API details raw: %s", _to_log_json(details))
             return closest_flight, details
         except Exception as exc:
+            self._last_api_error = f"Flight details fetch failed: {exc}"
             LOGGER.warning("Flight details fetch failed for %s: %s", getattr(closest_flight, "icao", "unknown"), exc)
             return closest_flight, None
 
