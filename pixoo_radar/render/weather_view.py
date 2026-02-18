@@ -27,6 +27,15 @@ COLOR_WIND_ARROW = "#FFD166"
 COLOR_ACTIVE_RWY_ARROW = "#7CFC8A"
 
 
+def wind_speed_value_for_unit(wind_kph, wind_unit: str):
+    if wind_kph is None:
+        return None
+    unit = str(wind_unit or "").lower()
+    if unit == "mph":
+        return int(round(float(wind_kph) * 0.621371))
+    return int(round(float(wind_kph)))
+
+
 def normalize_wind_dir_deg(wind_dir_deg):
     if wind_dir_deg is None:
         return None
@@ -170,6 +179,8 @@ def draw_weather_summary_frame(pizzoo, settings, weather: dict) -> None:
     temperature = format_temp_c(weather.get("temperature_c"))
     humidity = format_humidity(weather.get("humidity_pct"))
     wind = format_wind_kph(weather.get("wind_kph"), settings.weather_wind_speed_unit)
+    wind_speed = wind_speed_value_for_unit(weather.get("wind_kph"), settings.weather_wind_speed_unit)
+    wind_gust = wind_speed_value_for_unit(weather.get("wind_gust_kph"), settings.weather_wind_speed_unit)
     wind_dir_deg = normalize_wind_dir_deg(weather.get("wind_dir_deg"))
     wind_dir = format_wind_dir(wind_dir_deg) if wind_dir_deg is not None else None
 
@@ -178,8 +189,12 @@ def draw_weather_summary_frame(pizzoo, settings, weather: dict) -> None:
     pizzoo.draw_rectangle(xy=(0, 0), width=64, height=11, color=COLOR_WX_ACCENT, filled=True)
     pizzoo.draw_text("Weather", xy=(2, -1), font=settings.font_name, color=COLOR_WX_TEXT)
     hum_line = fit_text(f"HUM {humidity}", 10)
-    wind_text = wind.replace(" ", "")
-    wind_line = fit_text(f"{wind_dir} {wind_text}", 10) if wind_dir else fit_text(f"- {wind_text}", 10)
+    if wind_gust is not None and wind_speed is not None:
+        wind_text = f"{wind_speed}/{wind_gust}"
+        wind_line = fit_text(f"{wind_dir} {wind_text}", 10) if wind_dir else fit_text(f"-- {wind_text}", 10)
+    else:
+        wind_text = wind.replace(" ", "")
+        wind_line = fit_text(f"{wind_dir} {wind_text}", 10) if wind_dir else fit_text(f"-- {wind_text}", 10)
     pizzoo.draw_text(temperature, xy=(center_x(64, temperature), 13), font=settings.font_name, color=COLOR_WX_TEXT)
     pizzoo.draw_text(condition, xy=(center_x(64, condition), 25), font=settings.font_name, color=COLOR_WX_MUTED)
     pizzoo.draw_text(hum_line, xy=(center_x(64, hum_line), 37), font=settings.font_name, color=COLOR_WX_TEXT)

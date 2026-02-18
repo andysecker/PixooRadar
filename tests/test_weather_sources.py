@@ -27,6 +27,7 @@ def test_weather_uses_metar_for_temp_wind_and_open_meteo_for_condition():
             "wind_dir_from": 250,
             "wind_dir_to": 290,
             "wind_speed_kph": 12 * 1.852,
+            "wind_gust_kph": 18 * 1.852,
             "location": "LCPH",
         },
     )
@@ -39,6 +40,7 @@ def test_weather_uses_metar_for_temp_wind_and_open_meteo_for_condition():
     assert payload["wind_dir_from"] == 250
     assert payload["wind_dir_to"] == 290
     assert payload["wind_kph"] == pytest.approx(12 * 1.852)
+    assert payload["wind_gust_kph"] == pytest.approx(18 * 1.852)
     assert payload["humidity_pct"] is not None
     assert payload["source"] == "metar+open-meteo"
 
@@ -72,6 +74,14 @@ def test_parse_metar_with_library_handles_negative_temp_and_variable_wind():
     assert parsed["dewpoint_c"] == -5
     assert parsed["wind_speed_kph"] == pytest.approx(3 * 1.852, rel=0.05)
     assert parsed["wind_dir_deg"] is None
+
+
+def test_parse_metar_with_library_extracts_wind_gust():
+    pytest.importorskip("metar")
+    wx = WeatherData(latitude=0.0, longitude=0.0, metar_parser=None)
+    parsed = wx._parse_metar_fields_with_library({"raw": "EGXX 170850Z 26010G18KT 9999 FEW020 12/08 Q1016"})
+    assert parsed["wind_speed_kph"] == pytest.approx(10 * 1.852, rel=0.05)
+    assert parsed["wind_gust_kph"] == pytest.approx(18 * 1.852, rel=0.05)
 
 
 def test_open_meteo_fetch_requests_only_weather_code(monkeypatch):

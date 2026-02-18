@@ -145,11 +145,12 @@ class WeatherData:
             metar_fields.get("dewpoint_c"),
         )
         wind_kph = metar_fields.get("wind_speed_kph")
+        wind_gust_kph = metar_fields.get("wind_gust_kph")
 
-        if condition is None and temp_c is None and humidity_pct is None and wind_kph is None:
+        if condition is None and temp_c is None and humidity_pct is None and wind_kph is None and wind_gust_kph is None:
             return None
 
-        if temp_c is not None or humidity_pct is not None or wind_kph is not None:
+        if temp_c is not None or humidity_pct is not None or wind_kph is not None or wind_gust_kph is not None:
             source = "metar+open-meteo" if condition is not None else "metar"
         else:
             source = "open-meteo"
@@ -159,6 +160,7 @@ class WeatherData:
             "condition": condition,
             "humidity_pct": humidity_pct,
             "wind_kph": wind_kph,
+            "wind_gust_kph": wind_gust_kph,
             "wind_dir_deg": metar_fields.get("wind_dir_deg"),
             "wind_dir_from": metar_fields.get("wind_dir_from"),
             "wind_dir_to": metar_fields.get("wind_dir_to"),
@@ -282,6 +284,9 @@ class WeatherData:
         wind_speed_kph = self._quantity_value(getattr(decoded, "wind_speed", None), "KMH")
         if wind_speed_kph is None:
             wind_speed_kph = self._quantity_value(getattr(decoded, "wind_speed", None), "KPH")
+        wind_gust_kph = self._quantity_value(getattr(decoded, "wind_gust", None), "KMH")
+        if wind_gust_kph is None:
+            wind_gust_kph = self._quantity_value(getattr(decoded, "wind_gust", None), "KPH")
         raw_wind_dir = getattr(decoded, "wind_dir", None)
         wind_dir_deg = self._quantity_value(raw_wind_dir)
         wind_dir_from = self._quantity_value(
@@ -303,6 +308,8 @@ class WeatherData:
             wind_dir_to = int(round(float(wind_dir_to))) % 360
         if wind_speed_kph is not None:
             wind_speed_kph = float(wind_speed_kph)
+        if wind_gust_kph is not None:
+            wind_gust_kph = float(wind_gust_kph)
 
         return {
             "temperature_c": temp_c,
@@ -311,6 +318,7 @@ class WeatherData:
             "wind_dir_from": wind_dir_from,
             "wind_dir_to": wind_dir_to,
             "wind_speed_kph": wind_speed_kph,
+            "wind_gust_kph": wind_gust_kph,
             "location": metar_payload.get("station") or getattr(decoded, "station_id", None) or "LOCAL WX",
         }
 

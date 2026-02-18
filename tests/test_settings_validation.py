@@ -104,3 +104,13 @@ def test_load_settings_reports_missing_required_config(monkeypatch):
     monkeypatch.delattr(settings_module.app_config, "PIXOO_IP", raising=False)
     with pytest.raises(ValueError, match="Missing required config setting: PIXOO_IP"):
         load_settings()
+
+
+def test_load_settings_defaults_missing_no_flight_retry_settings(monkeypatch):
+    import pixoo_radar.settings as settings_module
+
+    monkeypatch.delattr(settings_module.app_config, "NO_FLIGHT_RETRY_SECONDS", raising=False)
+    monkeypatch.delattr(settings_module.app_config, "NO_FLIGHT_MAX_RETRY_SECONDS", raising=False)
+    settings = load_settings()
+    assert settings.no_flight_retry_seconds == settings.data_refresh_seconds
+    assert settings.no_flight_max_retry_seconds == settings.data_refresh_seconds

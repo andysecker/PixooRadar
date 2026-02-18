@@ -42,6 +42,7 @@ class WeatherSnapshot:
     condition: str | None
     humidity_pct: float | int | None
     wind_kph: float | int | None
+    wind_gust_kph: float | int | None
     wind_dir_deg: float | int | None
     wind_dir_from: float | int | None
     wind_dir_to: float | int | None
@@ -56,6 +57,7 @@ class WeatherSnapshot:
             condition=data.get("condition"),
             humidity_pct=data.get("humidity_pct"),
             wind_kph=data.get("wind_kph"),
+            wind_gust_kph=data.get("wind_gust_kph"),
             wind_dir_deg=data.get("wind_dir_deg"),
             wind_dir_from=data.get("wind_dir_from"),
             wind_dir_to=data.get("wind_dir_to"),

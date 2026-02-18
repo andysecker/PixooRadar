@@ -46,7 +46,25 @@ def test_weather_summary_omits_wind_direction_when_missing():
         },
     )
     bottom_text = [op["text"] for op in recorder.ops if op.get("op") == "draw_text" and op.get("xy", [None, None])[1] == 49]
-    assert bottom_text == ["- 10Mph"]
+    assert bottom_text == ["-- 10Mph"]
+
+
+def test_weather_summary_shows_gust_format_when_available():
+    recorder = RecordingPizzoo()
+    draw_weather_summary_frame(
+        recorder,
+        _settings(),
+        {
+            "condition": "CLEAR",
+            "temperature_c": 22.4,
+            "humidity_pct": 55.2,
+            "wind_kph": 16.0934,
+            "wind_gust_kph": 28.968,
+            "wind_dir_deg": 45.0,
+        },
+    )
+    bottom_text = [op["text"] for op in recorder.ops if op.get("op") == "draw_text" and op.get("xy", [None, None])[1] == 49]
+    assert bottom_text == ["NE 10/18"]
 
 
 def test_runway_diagram_omits_wind_and_active_runway_arrows_when_wind_direction_missing():
