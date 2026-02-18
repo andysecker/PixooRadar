@@ -29,6 +29,7 @@ COLOR_RWY_MARK = "#EDEDED"
 COLOR_WIND_ARROW = "#FFD166"
 COLOR_ACTIVE_RWY_ARROW = "#7CFC8A"
 COLOR_HOME_ICON = "#EAF6FF"
+RUNWAY_VIEW_ROTATION_DEG = 180.0
 
 
 def wind_speed_value_for_unit(wind_kph, wind_unit: str):
@@ -128,10 +129,13 @@ def draw_home_icon(pizzoo, x: int = 1, y: int = 1, color: str = COLOR_HOME_ICON)
 
 
 def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg: float, wind_dir_from=None, wind_dir_to=None) -> None:
+    def view_bearing(bearing_deg: float) -> float:
+        return (float(bearing_deg) + RUNWAY_VIEW_ROTATION_DEG) % 360.0
+
     cx, cy = 32, 32
     runway_half_len = 22
     pizzoo.draw_rectangle(xy=(0, 0), width=64, height=64, color=COLOR_WX_BG, filled=True)
-    draw_home_icon(pizzoo, x=1, y=1)
+    draw_home_icon(pizzoo, x=54, y=54)
 
     highlighted_ticks = set()
     from_tick = nearest_drawn_tick_bearing(wind_dir_from)
@@ -142,13 +146,18 @@ def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg:
         highlighted_ticks.add(to_tick)
 
     for b in range(0, 360, 10):
-        x1, y1 = bearing_to_xy(cx, cy, b, 28)
-        x2, y2 = bearing_to_xy(cx, cy, b, 30)
+        vb = view_bearing(b)
+        if int(round(vb)) % 360 == 0:
+            continue
+        x1, y1 = bearing_to_xy(cx, cy, vb, 28)
+        x2, y2 = bearing_to_xy(cx, cy, vb, 30)
         tick_color = COLOR_WIND_ARROW if b in highlighted_ticks else COLOR_WX_ACCENT
         draw_line(pizzoo, x1, y1, x2, y2, color=tick_color, thickness=1)
 
-    rx0, ry0 = bearing_to_xy(cx, cy, runway_heading_deg, runway_half_len)
-    rx1, ry1 = bearing_to_xy(cx, cy, (runway_heading_deg + 180) % 360, runway_half_len)
+    pizzoo.draw_text("S", xy=(center_x(64, "S") + 2, -1), font=settings.runway_label_font_name, color=COLOR_WX_TEXT)
+
+    rx0, ry0 = bearing_to_xy(cx, cy, view_bearing(runway_heading_deg), runway_half_len)
+    rx1, ry1 = bearing_to_xy(cx, cy, view_bearing((runway_heading_deg + 180) % 360), runway_half_len)
     draw_line(pizzoo, rx0, ry0, rx1, ry1, color=COLOR_RWY, thickness=7)
     draw_line(pizzoo, rx0, ry0, rx1, ry1, color=COLOR_RWY_MARK, thickness=1)
 
@@ -158,10 +167,10 @@ def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg:
             ax0, ay0 = rx1, ry1
         else:
             ax0, ay0 = rx0, ry0
-        ax1, ay1 = bearing_to_xy(ax0, ay0, active_heading, 11)
+        ax1, ay1 = bearing_to_xy(ax0, ay0, view_bearing(active_heading), 11)
         draw_line(pizzoo, ax0, ay0, ax1, ay1, color=COLOR_ACTIVE_RWY_ARROW, thickness=2)
-        left = (active_heading + 142.0) % 360.0
-        right = (active_heading - 142.0) % 360.0
+        left = view_bearing((active_heading + 142.0) % 360.0)
+        right = view_bearing((active_heading - 142.0) % 360.0)
         hx0, hy0 = bearing_to_xy(ax1, ay1, left, 3)
         hx1, hy1 = bearing_to_xy(ax1, ay1, right, 3)
         draw_line(pizzoo, ax1, ay1, hx0, hy0, color=COLOR_ACTIVE_RWY_ARROW, thickness=1)
@@ -175,9 +184,10 @@ def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg:
 
     wind_from = normalize_wind_dir_deg(wind_dir_deg)
     if wind_from is not None:
-        shaft_bearing = (wind_from + 180.0) % 360.0
-        ax0, ay0 = bearing_to_xy(cx, cy, wind_from, 24)
-        ax1, ay1 = bearing_to_xy(cx, cy, wind_from, 10)
+        shaft_bearing = view_bearing((wind_from + 180.0) % 360.0)
+        wind_from_view = view_bearing(wind_from)
+        ax0, ay0 = bearing_to_xy(cx, cy, wind_from_view, 24)
+        ax1, ay1 = bearing_to_xy(cx, cy, wind_from_view, 10)
         draw_line(pizzoo, ax0, ay0, ax1, ay1, color=COLOR_WIND_ARROW, thickness=2)
         left = (shaft_bearing + 150.0) % 360.0
         right = (shaft_bearing - 150.0) % 360.0

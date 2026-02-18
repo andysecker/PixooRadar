@@ -28,10 +28,12 @@ Two-frame weather loop (frame duration configurable):
 
 2. Runway wind diagram
 - Runway drawn at your configured heading
+- View is rotated 180° (south-up orientation)
 - Wind arrow overlaid by current wind direction
 - Active runway direction arrow (green), selected from wind/runway alignment
 - Active runway designator label near the green arrow (requires runway label font config)
-- North marker at top of the compass ring
+- South marker (`S`, small font) at top center
+- Top-center tick mark is intentionally suppressed to keep `S` legible
 
 ## Data Sources
 
