@@ -6,6 +6,7 @@ from .common import (
     center_x,
     draw_line,
     draw_px,
+    dump_render_debug_gif,
     fit_text,
     format_humidity,
     format_temp_c,
@@ -197,7 +198,9 @@ def build_and_send_weather_idle_screen(pizzoo, settings, weather: dict) -> None:
         wind_dir_to=weather.get("wind_dir_to"),
     )
     LOGGER.info("Sending weather idle screen (2 frames, %ss per frame).", settings.weather_view_seconds)
-    pizzoo.render(frame_speed=max(500, int(settings.weather_view_seconds * 1000)))
+    frame_speed = max(500, int(settings.weather_view_seconds * 1000))
+    dump_render_debug_gif(pizzoo, frame_speed)
+    pizzoo.render(frame_speed=frame_speed)
 
 
 def draw_weather_summary_frame(pizzoo, settings, weather: dict) -> None:

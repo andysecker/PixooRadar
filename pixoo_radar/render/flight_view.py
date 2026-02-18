@@ -11,7 +11,8 @@ from .common import (
     center_x,
     draw_airplane_icon,
     draw_separator_line,
-    format_flight_level,
+    dump_render_debug_gif,
+    format_altitude_feet_raw,
     format_heading,
     format_speed,
     measure_text_width,
@@ -82,12 +83,25 @@ def draw_label_value(pizzoo, settings, label: str, value: str, y: int) -> None:
     pizzoo.draw_text(value, xy=(value_x, y), font=settings.font_name, color=settings.color_text)
 
 
+def draw_altitude_ft_value(pizzoo, settings, altitude_raw, y: int) -> None:
+    value = format_altitude_feet_raw(altitude_raw)
+    suffix = "ft"
+    full_text = f"{value} {suffix}"
+    x_start = center_x(64, full_text)
+    pizzoo.draw_text(value, xy=(x_start, y), font=settings.font_name, color=settings.color_text)
+    suffix_x = x_start + measure_text_width(f"{value} ")
+    pizzoo.draw_text(suffix, xy=(suffix_x, y), font=settings.font_name, color=COLOR_LABEL)
+
+
 def draw_info_page(pizzoo, settings, upper_pair: tuple, lower_pair: tuple) -> None:
     pizzoo.draw_rectangle(xy=(0, 33), width=64, height=31, color=settings.color_box, filled=True)
     draw_separator_line(pizzoo, y=32, style="dashed")
     draw_label_value(pizzoo, settings, upper_pair[0], upper_pair[1], y=34)
     draw_separator_line(pizzoo, y=48, style="dashed")
-    draw_label_value(pizzoo, settings, lower_pair[0], lower_pair[1], y=50)
+    if lower_pair[0] == "__ALT_RAW_FT__":
+        draw_altitude_ft_value(pizzoo, settings, lower_pair[1], y=50)
+    else:
+        draw_label_value(pizzoo, settings, lower_pair[0], lower_pair[1], y=50)
 
 
 def build_and_send_animation(pizzoo, settings, data: dict) -> None:
@@ -95,15 +109,15 @@ def build_and_send_animation(pizzoo, settings, data: dict) -> None:
     airline_name = str(data.get("airline", "") or "")
     origin = str(data.get("origin", "---"))[:3]
     destination = str(data.get("destination", "---"))[:3]
-    flight_num = str(data.get("flight_number", "----"))[:7]
+    callsign = str(data.get("callsign") or data.get("flight_number") or "----")[:7]
     aircraft = str(data.get("aircraft_type_icao", "----"))[:4]
     registration = str(data.get("registration", "------"))[:7]
-    altitude = data.get("altitude", 0) or 0
+    altitude = data.get("altitude")
     speed = data.get("ground_speed", 0) or 0
     heading = data.get("heading")
 
     info_pages = [
-        (("FLT", flight_num), ("ALT", format_flight_level(altitude))),
+        (("CS", callsign), ("__ALT_RAW_FT__", altitude)),
         (("TYPE", aircraft), ("REG", registration)),
         (("SPD", format_speed(speed, settings.flight_speed_unit)), ("HDG", format_heading(heading))),
     ]
@@ -123,4 +137,5 @@ def build_and_send_animation(pizzoo, settings, data: dict) -> None:
             pizzoo.add_frame()
 
     LOGGER.info("Sending %s flight frames to device (frame speed: %sms).", TOTAL_FRAMES, settings.animation_frame_speed)
+    dump_render_debug_gif(pizzoo, settings.animation_frame_speed)
     pizzoo.render(frame_speed=settings.animation_frame_speed)

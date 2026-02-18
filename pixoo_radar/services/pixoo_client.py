@@ -5,6 +5,38 @@ from time import monotonic, sleep
 from pizzoo import Pizzoo
 
 LOGGER = logging.getLogger("pixoo_radar")
+PIXOO_HTTP_TIMEOUT_SECONDS = 5.0
+_PIXOO_POST_TIMEOUT_PATCHED = False
+
+
+def _install_pizzoo_http_timeout_patch(timeout_seconds: float = PIXOO_HTTP_TIMEOUT_SECONDS) -> None:
+    """
+    Patch pizzoo renderer HTTP calls to use a finite timeout.
+
+    The upstream library uses requests.post without timeout, which can block
+    indefinitely if the device disappears mid-render.
+    """
+    global _PIXOO_POST_TIMEOUT_PATCHED
+    if _PIXOO_POST_TIMEOUT_PATCHED:
+        return
+    try:
+        import pizzoo._renderers as pizzoo_renderers
+    except Exception as exc:  # noqa: BLE001
+        LOGGER.warning("Unable to apply Pixoo HTTP timeout patch: %s", exc)
+        return
+
+    original_post = getattr(pizzoo_renderers, "post", None)
+    if not callable(original_post):
+        LOGGER.warning("Unable to apply Pixoo HTTP timeout patch: renderer post callable not found.")
+        return
+
+    def post_with_timeout(*args, **kwargs):
+        kwargs.setdefault("timeout", timeout_seconds)
+        return original_post(*args, **kwargs)
+
+    pizzoo_renderers.post = post_with_timeout
+    _PIXOO_POST_TIMEOUT_PATCHED = True
+    LOGGER.info("Applied Pixoo HTTP timeout patch (%ss).", timeout_seconds)
 
 
 class PixooClient:
@@ -32,6 +64,7 @@ class PixooClient:
                 ) from exc
 
     def connect_with_retry(self, fail_fast: bool = False):
+        _install_pizzoo_http_timeout_patch()
         deadline = None
         if fail_fast:
             deadline = monotonic() + float(self.settings.pixoo_startup_connect_timeout_seconds)

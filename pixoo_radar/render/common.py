@@ -1,10 +1,17 @@
+import logging
 from math import cos, radians, sin
+from pathlib import Path
+
+from PIL import Image
 
 
 COLOR_ROUTE_LINE = "#666666"
 COLOR_PLANE = "#FFFFFF"
 COLOR_SEPARATOR = "#555555"
 COLOR_LABEL = "#999999"
+DEBUG_RENDER_GIF_PATH = Path("debug/current_pixoo_render.gif")
+
+LOGGER = logging.getLogger("pixoo_radar")
 
 PLANE_WIDTH = 5
 ROUTE_START = 21
@@ -93,6 +100,17 @@ def format_flight_level(altitude_ft: int) -> str:
     return f"FL{(altitude_ft // 100):03d}"
 
 
+def format_altitude_feet_raw(altitude_ft) -> str:
+    """Format raw altitude in feet with thousands separator."""
+    if altitude_ft is None:
+        return "---"
+    try:
+        value = int(round(float(altitude_ft)))
+    except (TypeError, ValueError):
+        return "---"
+    return f"{value:,}"
+
+
 def format_speed(speed_kts: int, unit: str) -> str:
     if speed_kts is None:
         return "---Mph" if unit.lower() == "mph" else "---Kt"
@@ -137,3 +155,39 @@ def format_wind_dir(wind_dir_deg) -> str:
         return "--"
     directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
     return directions[int((float(wind_dir_deg) + 22.5) // 45) % 8]
+
+
+def dump_render_debug_gif(pizzoo, frame_speed: int, output_path: Path = DEBUG_RENDER_GIF_PATH) -> bool:
+    """
+    Persist the current Pizzoo frame buffer as a single debug GIF.
+
+    Returns True on successful write. Returns False when no compatible frame
+    buffer is available (for example during unit tests using RecordingPizzoo).
+    """
+    buffer = getattr(pizzoo, "_Pizzoo__buffer", None)
+    size = getattr(pizzoo, "size", None)
+    if not isinstance(buffer, list) or not buffer:
+        return False
+    try:
+        size = int(size)
+    except (TypeError, ValueError):
+        return False
+
+    expected_len = size * size * 3
+    images = []
+    for frame in buffer:
+        if not isinstance(frame, list) or len(frame) != expected_len:
+            return False
+        images.append(Image.frombytes("RGB", (size, size), bytes(frame), "raw"))
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    images[0].save(
+        output_path,
+        format="GIF",
+        save_all=True,
+        append_images=images[1:],
+        loop=0,
+        duration=max(1, int(frame_speed)),
+    )
+    LOGGER.info("Saved render debug GIF: %s (%s frames)", output_path, len(images))
+    return True

@@ -21,6 +21,7 @@ Thumbs.db
 
 # Runtime artifacts
 *.log
+debug/current_pixoo_render.gif
 
 # Cached airline logos (auto-downloaded at runtime)
 airline_logos/
