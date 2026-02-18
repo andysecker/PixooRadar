@@ -19,13 +19,50 @@ from .common import (
 
 LOGGER = logging.getLogger("pixoo_radar")
 
+TOP_BAND_HEIGHT = 20
+TOP_TEXT_HEIGHT = 7
+TOP_TEXT_Y_CENTERED = (TOP_BAND_HEIGHT - TOP_TEXT_HEIGHT) // 2
+TOP_TEXT_Y_STATIC = 7
+AIRLINE_SCROLL_GAP_PX = 12
 
-def draw_top_section(pizzoo, settings, logo: str, origin: str, destination: str, airline_name: str = "", y_route: int = 20) -> None:
+
+def _draw_airline_name(pizzoo, settings, airline_name: str, frame_idx: int | None) -> None:
+    name = str(airline_name or "")
+    if not name:
+        return
+
+    if frame_idx is None:
+        static_name = name[:10]
+        pizzoo.draw_text(static_name, xy=(center_x(64, static_name), TOP_TEXT_Y_STATIC), font=settings.font_name, color="#FFFFFF")
+        return
+
+    text_w = measure_text_width(name)
+    if text_w <= 64:
+        pizzoo.draw_text(name, xy=(center_x(64, name), TOP_TEXT_Y_CENTERED), font=settings.font_name, color="#FFFFFF")
+        return
+
+    total_steps = max(1, TOTAL_FRAMES - 1)
+    travel_px = text_w + AIRLINE_SCROLL_GAP_PX
+    progress = min(max(frame_idx, 0), total_steps) / total_steps
+    primary_x = int(round(-travel_px * progress))
+    line_width = max(64, text_w + 1)
+    pizzoo.draw_text(name, xy=(primary_x, TOP_TEXT_Y_CENTERED), font=settings.font_name, color="#FFFFFF", line_width=line_width)
+
+
+def draw_top_section(
+    pizzoo,
+    settings,
+    logo: str,
+    origin: str,
+    destination: str,
+    airline_name: str = "",
+    y_route: int = 20,
+    frame_idx: int | None = None,
+) -> None:
     if logo:
         pizzoo.draw_image(logo, xy=(0, 0), size=(64, 20), resample_method=Image.LANCZOS)
     elif airline_name:
-        name = airline_name[:10]
-        pizzoo.draw_text(name, xy=(center_x(64, name), 7), font=settings.font_name, color="#FFFFFF")
+        _draw_airline_name(pizzoo, settings, airline_name, frame_idx=frame_idx)
 
     draw_separator_line(pizzoo, y=20, style="dashed")
     pizzoo.draw_rectangle(xy=(0, 21), width=64, height=11, color=settings.color_box, filled=True)
@@ -75,7 +112,7 @@ def build_and_send_animation(pizzoo, settings, data: dict) -> None:
 
     for frame_idx in range(TOTAL_FRAMES):
         pizzoo.cls()
-        draw_top_section(pizzoo, settings, logo, origin, destination, airline_name, y_route)
+        draw_top_section(pizzoo, settings, logo, origin, destination, airline_name, y_route, frame_idx=frame_idx)
         plane_x = ROUTE_START - 5 + (frame_idx % AIRPLANE_CYCLE)
         draw_airplane_icon(pizzoo, plane_x, y_route + 4, clip_left=ROUTE_START, clip_right=ROUTE_END)
 
