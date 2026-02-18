@@ -1,4 +1,7 @@
 import logging
+import json
+from pathlib import Path
+
 from PIL import Image
 
 from .common import (
@@ -26,6 +29,34 @@ TOP_TEXT_HEIGHT = 7
 TOP_TEXT_Y_CENTERED = (TOP_BAND_HEIGHT - TOP_TEXT_HEIGHT) // 2
 TOP_TEXT_Y_STATIC = 7
 AIRLINE_SCROLL_GAP_PX = 12
+AIRCRAFT_MODEL_DISPLAY_MAP_PATH = Path(__file__).resolve().parents[2] / "data" / "icao_model_display_map.json"
+
+
+def _load_aircraft_model_display_map() -> dict[str, str]:
+    try:
+        raw = AIRCRAFT_MODEL_DISPLAY_MAP_PATH.read_text(encoding="utf-8")
+        data = json.loads(raw)
+    except FileNotFoundError:
+        LOGGER.warning("Aircraft display map not found: %s", AIRCRAFT_MODEL_DISPLAY_MAP_PATH)
+        return {}
+    except Exception as exc:  # noqa: BLE001
+        LOGGER.warning("Failed to load aircraft display map (%s): %s", AIRCRAFT_MODEL_DISPLAY_MAP_PATH, exc)
+        return {}
+    if not isinstance(data, dict):
+        LOGGER.warning("Aircraft display map has invalid format (expected object): %s", AIRCRAFT_MODEL_DISPLAY_MAP_PATH)
+        return {}
+
+    cleaned = {}
+    for key, value in data.items():
+        code = str(key or "").strip().upper()
+        display = str(value or "").strip()
+        if not code or not display:
+            continue
+        cleaned[code] = display[:10]
+    return cleaned
+
+
+AIRCRAFT_MODEL_DISPLAY_MAP = _load_aircraft_model_display_map()
 
 
 def _draw_airline_name(pizzoo, settings, airline_name: str, frame_idx: int | None) -> None:
@@ -116,10 +147,18 @@ def draw_info_page(pizzoo, settings, upper_pair: tuple, lower_pair: tuple) -> No
 
 
 def format_aircraft_display(aircraft_type, aircraft_type_icao) -> str:
+    icao_code = str(aircraft_type_icao or "").strip().upper()
+    if icao_code:
+        mapped = AIRCRAFT_MODEL_DISPLAY_MAP.get(icao_code)
+        if mapped:
+            return mapped
+
     aircraft_text = str(aircraft_type or "").strip()
     display = aircraft_text.split(" ", 1)[1].strip() if " " in aircraft_text else aircraft_text
     if not display:
-        display = str(aircraft_type_icao or "").strip()
+        display = icao_code
+    if len(display) > 10:
+        display = display[:10].rstrip()
     return display or "----"
 
 

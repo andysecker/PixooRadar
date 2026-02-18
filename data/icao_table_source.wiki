@@ -1,0 +1,574 @@
+{| class="wikitable sortable" style="border: 1px solid darkgray;"
+|+ ICAO aircraft type designators
+! scope="col" | ICAO<br>code<ref name=ICAOcode>{{cite web |url= https://www.icao.int/publications/doc8643/pages/search.aspx |title= Aircraft type designators |publisher= International Civil Aviation Organization }}</ref>
+! scope="col" | IATA<br>type code
+! scope="col" | Model
+|-
+| A124 || A4F || [[Antonov An-124 Ruslan]]
+|-
+| A140 || A40 || [[Antonov An-140]]
+|-
+| A148 || A81 || [[Antonov An-148]]
+|-
+| A158 || A58 || [[Antonov An-148#Variants|Antonov An-158]]
+|-
+| A19N || 31N || [[Airbus A319neo]]
+|-
+| A20N || 32N || [[Airbus A320neo]]
+|-
+| A21N || 32Q || [[Airbus A321neo|Airbus A321neo/LR/XLR]]
+|-
+| A225 || A5F || [[Antonov An-225 Mriya]]
+|-
+| A306 || AB6 || [[Airbus A300|Airbus A300-600]]
+|-
+| A306 || ABY || Airbus A300-600 Freighter<ref name=":0">{{cite web | url=https://www.avcodes.co.uk/acrtypes.asp | title=The Aviation Codes Web Site - Aircraft Type Codes }}</ref>
+|-
+| A30B || AB4 || [[Airbus A300|Airbus A300B2, A300B4 and A300C4]]
+|-
+| A310 || 312 || [[Airbus A310|Airbus A310-200]]
+|-
+| A310 || 313 || [[Airbus A310|Airbus A310-300]]
+|-
+| A318 || 318 || [[Airbus A318]]
+|-
+| A318 || 32C || [[Airbus A318|Airbus A318 (sharklets)]]
+|-
+| A319 || 319 || [[Airbus A319]]
+|-
+| A319 || 32D ||[[Airbus A319|Airbus A319 (sharklets)]]
+|-
+| A320 || 320 || [[Airbus A320]]
+|-
+| A320 || 32A || [[Airbus A320|Airbus A320 (sharklets)]]
+|-
+| A321 || 321 || [[Airbus A321]]
+|-
+| A321 || 32B || [[Airbus A321|Airbus A321 (sharklets)]]
+|-
+| A332 || 332 || [[Airbus A330#Variants|Airbus A330-200]]
+|-
+| A333 || 333 || [[Airbus A330|Airbus A330-300]]
+|-
+| A332 || 33X || [[Airbus A330#Variants|Airbus A330-200 Freighter]]
+|-
+| A333 || 33Y || [[Airbus A330|Airbus A330-300 Freighter]]
+|-
+| A337 || {{TBD}} || [[Airbus BelugaXL|Airbus A330-700 "BelugaXL"]]
+|-
+| A338 || 338 || [[Airbus A330neo|Airbus A330-800]]
+|-
+| A339 || 339 || [[Airbus A330neo|Airbus A330-900]]
+|-
+| A342 || 342 || [[Airbus A340|Airbus A340-200]]
+|-
+| A343 || 343 || [[Airbus A340|Airbus A340-300]]
+|-
+| A345 || 345 || [[Airbus A340|Airbus A340-500]]
+|-
+| A346 || 346 || [[Airbus A340|Airbus A340-600]]
+|-
+| A359 || 359 || [[Airbus A350|Airbus A350-900]]
+|-
+| A35K || 351 || [[Airbus A350|Airbus A350-1000]]
+|-
+| A388 || 388 || [[Airbus A380|Airbus A380-800]]
+|-
+| A3ST || ABB || [[Airbus Beluga|Airbus A300-600ST "Super Transporter" / "Beluga"]]
+|-
+| A400 || {{n/a}} || [[Airbus A400M Atlas]]
+|-
+| A748 || HS7 || [[Hawker Siddeley HS 748]]
+|-
+| AC90 || ACT || [[Aero Commander|Gulfstream/Rockwell (Aero) Turbo Commander 690]]
+|-
+| AJ27 || C27 || [[Comac C909|Comac ARJ21-700]] / [[Comac C909|C909]]
+|-
+| AN12 || ANF || [[Antonov An-12]]
+|-
+| AN24 || AN4 || [[Antonov An-24]]
+|-
+| AN26 || A26 || [[Antonov An-26]]
+|-
+| AN28 || A28 || [[Antonov An-28]]
+|-
+| AN30 || A30 || [[Antonov An-30]]
+|-
+| AN32 || A32 || [[Antonov An-32]]
+|-
+| AN72 || AN7 || [[Antonov An-72|Antonov An-72 / An-74]]
+|-
+| AT43 || AT4 || [[ATR 42|Aerospatiale/Alenia ATR 42-300 / 320]]
+|-
+| AT45 || AT5 || [[ATR 42|Aerospatiale/Alenia ATR 42-500]]
+|-
+| AT46 || ATR || [[ATR 42|Aerospatiale/Alenia ATR 42-600]]
+|-
+| AT72 || AT7 || [[ATR 72|Aerospatiale/Alenia ATR 72-201/-202]]
+|-
+| AT73 || ATR || [[ATR 72|Aerospatiale/Alenia ATR 72-211/-212]]
+|-
+| AT75 || ATR || [[ATR 72|Aerospatiale/Alenia ATR 72-212A (500)]]
+|-
+| AT76 || ATR || [[ATR 72|Aerospatiale/Alenia ATR 72-212A (600)]]
+|-
+| ATP || ATP || [[British Aerospace ATP]]
+|-
+| B190 || BEH || [[Beechcraft 1900]]
+|-
+| B37M || 7M7 || [[Boeing 737 MAX#737 MAX 7|Boeing 737 MAX 7]]
+|-
+| B38M || 7M8 || [[Boeing 737 MAX#737 MAX 8|Boeing 737 MAX 8]]
+|-
+| B39M || 7M9 || [[Boeing 737 MAX#737 MAX 9|Boeing 737 MAX 9]]
+|-
+| B3XM || 7MJ || [[Boeing 737 MAX#737 MAX 10|Boeing 737 MAX 10]]
+|-
+| B461 || 141 || [[British Aerospace 146|BAe 146-100]]
+|-
+| B462 || 142 || [[British Aerospace 146|BAe 146-200]]
+|-
+| B463 || 143 || [[British Aerospace 146|BAe 146-300]]
+|-
+|B52
+| {{n/a}}
+|[[Boeing B-52 Stratofortress]]
+|-
+| B703 || 703 || [[Boeing 707]]
+|-
+| B712 || 717 || [[Boeing 717]]
+|-
+| B720 || B72 || [[Boeing 720|Boeing 720B]]
+|-
+| B721 || 721 || [[Boeing 727|Boeing 727-100]]
+|-
+| B722 || 722 || [[Boeing 727|Boeing 727-200]]
+|-
+| B732 || 732 || [[Boeing 737|Boeing 737-200]]
+|-
+| B732 || 73F || [[Boeing 737 Classic|Boeing 737-200 Freighter]]
+|-
+|B732
+|73L
+|[[Boeing 737|Boeing 737-200 Combi]]<ref name=":0" />
+|-
+| B733 || 733 || [[Boeing 737 Classic|Boeing 737-300]]
+|-
+| B733 || 73C || [[Boeing 737 Classic|Boeing 737-300 Winglets]]
+|-
+| B733 || 73Y || [[Boeing 737 Classic|Boeing 737-300 Freighter]]
+|-
+| B734 || 734 || [[Boeing 737 Classic|Boeing 737-400]]
+|-
+| B734 || 73P || [[Boeing 737 Classic|Boeing 737-400 Freighter]]
+|-
+| B735 || 735 || [[Boeing 737 Classic|Boeing 737-500]]
+|-
+| B735 || 73E || [[Boeing 737 Classic|Boeing 737-500 Winglets]]
+|-
+| B736 || 736 || [[Boeing 737 Next Generation|Boeing 737-600]]
+|-
+| B738 || 738 || [[Boeing 737 Next Generation|Boeing 737-800]]
+|-
+| B739 || 739 || [[Boeing 737 Next Generation|Boeing 737-900]] / [[Boeing 737 Next Generation|Boeing 737-900ER]]
+|-
+| B737 || 73G || [[Boeing 737 Next Generation|Boeing 737-700]] / [[Boeing 737 Next Generation|Boeing 737-700ER]]
+|-
+| B737 || 73W || [[Boeing 737 Next Generation|Boeing 737-700 Winglets]]
+|-
+| B738 || 73H || [[Boeing 737 Next Generation|Boeing 737-800 Winglets]]
+|-
+| B738 || 73K || [[Boeing 737 Next Generation|Boeing 737-800 Freighter Winglets]]
+|-
+| B738 || 73U || [[Boeing 737 Next Generation|Boeing 737-800 Freighter]]
+|-
+| B739 || 73J || [[Boeing 737 Next Generation|Boeing 737-900 Winglets]]
+|-
+| B741 || 741 || [[Boeing 747|Boeing 747-100]]
+|-
+| B741 || 74T || [[Boeing 747|Boeing 747-100 Freighter]]
+|-
+| B742 || 742 || [[Boeing 747|Boeing 747-200]]
+|-
+| B742 || 74C || [[Boeing 747|Boeing 747-200M]]
+|-
+| B742 || 74X || [[Boeing 747|Boeing 747-200F]]
+|-
+| B743 || 743 || [[Boeing 747|Boeing 747-300]]
+|-
+| B743 || 74D || [[Boeing 747|Boeing 747-300M]]
+|-
+| B744 || 744 || [[Boeing 747-400]] / [[Boeing 747-400|Boeing 747-400ER]]
+|-
+| B744 || 74E || [[Boeing 747-400|Boeing 747-400M]]
+|-
+| B744 || 74Y || [[Boeing 747-400|Boeing 747-400F]] / [[Boeing 747-400|Boeing 747-400ERF]]
+|-
+| B748 || 74H || [[Boeing 747-8|Boeing 747-8I]]
+|-
+| B748 || 74N || [[Boeing 747-8|Boeing 747-8F]]
+|-
+| B74R || 74R || [[Boeing 747|Boeing 747SR]]
+|-
+| B74R || 74V || [[Boeing 747|Boeing 747SR Freighter]]
+|-
+| B74S || 74L || [[Boeing 747SP]]
+|-
+| B752 || 752 || [[Boeing 757|Boeing 757-200]]
+|-
+| B752 || 75F || [[Boeing 757|Boeing 757F]]
+|-
+|B752
+|75W
+|[[Boeing 757|Boeing 757-200 Winglets]]<ref name=":0" />
+|-
+| B753 || 753 || [[Boeing 757|Boeing 757-300]]
+|-
+| B762 || 762 || [[Boeing 767|Boeing 767-200]] / [[Boeing 767|Boeing 767-200ER]]
+|-
+| B762 || 76X || [[Boeing 767|Boeing 767-200 Freighter]] / [[Boeing 767|Boeing 767-200ER]]
+|-
+| B763 || 763 || [[Boeing 767|Boeing 767-300]] / [[Boeing 767-300ER]]
+|-
+| B763 || 76W || [[Boeing 767|Boeing 767-300ER Winglets]] 
+|-
+| B763 || 76Y || [[Boeing 767|Boeing 767-300 Freighter]]
+|-
+| B764 || 764 || [[Boeing 767|Boeing 767-400ER]]
+|-
+| B772 || 772 || [[Boeing 777|Boeing 777-200]] / [[Boeing 777|Boeing 777-200ER]]
+|-
+| B773 || 773 || [[Boeing 777|Boeing 777-300]]
+|-
+| B778 || 778 || [[Boeing 777X#777-8|Boeing 777-8]]
+|-
+| B779 || 779 || [[Boeing 777X#777-9|Boeing 777-9]]
+|-
+| B77L || 77X || [[Boeing 777#777 Freighter|Boeing 777-200 Freighter]]
+|-
+| B77L || 77L || [[Boeing 777#777-200LR|Boeing 777-200LR]]
+|-
+| B77W || 77W || [[Boeing 777#777-300ER|Boeing 777-300ER]]
+|-
+| B788 || 788 || [[Boeing 787 Dreamliner#787-8|Boeing 787-8]]
+|-
+| B789 || 789 || [[Boeing 787 Dreamliner#787-9|Boeing 787-9]]
+|-
+| B78X || 781 || [[Boeing 787 Dreamliner#787-10|Boeing 787-10]]
+|-
+| BA11 || B11 || [[BAC One-Eleven|British Aerospace (BAC) One Eleven]]
+|-
+| BCS1 || 221 || [[Airbus A220|Bombardier CSeries CS100]] / [[Airbus A220-100]]
+|-
+| BCS3 || 223 || [[Airbus A220|Bombardier CSeries CS300]] / [[Airbus A220-300]]
+|-
+| BE20 || {{n/a}} || [[Beechcraft Super King Air|Beechcraft (Super) King Air 200]]
+|-
+| BE40 || {{n/a}} || [[Hawker 400]]
+|-
+| BE99 || {{n/a}} || [[Beechcraft Model 99]] 
+|-
+| BELF || SHB || [[Short Belfast|Shorts SC-5 Belfast]]
+|-
+| BER2 || {{n/a}} || [[Beriev Be-200|Beriev Be-200 Altair]]
+|-
+| BLCF || 74B || [[Boeing Dreamlifter|Boeing 747-400 LCF Dreamlifter]]
+|-
+| C130 || LOH || [[Lockheed L-100 Hercules|Lockheed L-182 / 282 / 382 (L-100) Hercules]]
+|-
+| C208 || {{n/a}} || [[Cessna 208 Caravan]]
+|-
+| C212 || CS2 || [[CASA C-212 Aviocar|CASA / IPTN 212 Aviocar]]
+|-
+| C25A || CNJ || [[Cessna CitationJet|Cessna Citation CJ2]]
+|-
+| C25B || CNJ || [[Cessna CitationJet|Cessna Citation CJ3]]
+|-
+| C25C || CNJ || [[Cessna CitationJet|Cessna Citation CJ4]]
+|-
+| C30J || LOH || [[Lockheed Martin C-130J Hercules]]
+|-
+| C408 || {{n/a}} || [[Cessna 408 SkyCourier]]
+|-
+|C5M
+|{{n/a}}
+|[[Lockheed C-5 Galaxy|Lockheed C-5M Super Galaxy]]
+|-
+| C500 || CNJ || [[Cessna Citation I]]
+|-
+| C510 || CNJ || [[Cessna Citation Mustang]]
+|-
+| C525 || CNJ || [[Cessna CitationJet]]
+|-
+| C550 || CNJ || [[Cessna Citation II]]
+|-
+| C560 || CNJ || [[Cessna Citation V]]
+|-
+| C56X || CNJ || [[Cessna Citation Excel]]
+|-
+| C650 || CNJ || [[Cessna Citation III]], [[Cessna Citation III|VI]], [[Cessna Citation VII|VII]]
+|-
+| C680 || CNJ || [[Cessna Citation Sovereign]]
+|-
+| C68A || CNJ || [[Cessna Citation Latitude]]
+|-
+| C700 || CNJ || [[Cessna Citation Longitude]]
+|-
+| C750 || CNJ || [[Cessna Citation X]]
+|-
+| C919 || 919 || [[Comac C919]]
+|-
+| CL2T || {{n/a}} || [[Bombardier 415]]
+|-
+| CL30 || {{n/a}} || [[Bombardier Challenger 300|Bombardier BD-100 Challenger 300]]
+|-
+| CL35 || {{n/a}} || [[Bombardier Challenger 300|Bombardier BD-100 Challenger 350]]
+|-
+| CL60 || CCJ || [[Bombardier Challenger 600 series|Canadair Challenger 600]]
+|-
+| CN35 || CS5 || [[CASA/IPTN CN-235]]
+|-
+| CRJ1 || CR1 || [[Bombardier CRJ200|Canadair Regional Jet 100]]
+|-
+| CRJ2 || CR2 || [[Bombardier CRJ200|Canadair Regional Jet 200]]
+|-
+| CRJ7 || CR7 || [[Bombardier CRJ700 series|Canadair Regional Jet 700 | Regional Jet 550]]
+|-
+| CRJ9 || CR9 || [[Bombardier CRJ700 series#CRJ705|Canadair Regional Jet 900]]
+|-
+| CRJX || CRK || [[Bombardier CRJ700 series#CRJ1000|Canadair Regional Jet 1000]]
+|-
+| CVLT || CV5 || [[Convair CV-240 family|Convair CV-580, Convair CV-600, Convair CV-640]]
+|-
+| D228 || D28 || [[Dornier 228]]
+|-
+| D328 || D38 || [[Dornier 328|Fairchild Dornier Do.328]]
+|-
+| DC10 || D11 || [[Douglas DC-10|Douglas DC-10-10 / -15 Passenger]]
+|-
+| DC10 || D1C || [[Douglas DC-10|Douglas DC-10-30 / -40 Passenger]]
+|-
+| DC10 || D1M || [[Douglas DC-10|Douglas DC-10-30 Combi]]
+|-
+| DC10 || D1X || [[Douglas DC-10|Douglas DC-10-10 Freighter]]
+|-
+| DC10 || D1Y || [[Douglas DC-10|Douglas DC-10-30 / -40 Freighter]]
+|-
+| DC85 || D8T || [[Douglas DC-8| Douglas DC-8-50]]
+|-
+| DC86 || D8L || [[Douglas DC-8| Douglas DC-8-62]]
+|-
+| DC87 || D8Q || [[Douglas DC-8| Douglas DC-8-72]]
+|-
+| DC91 || D91 || [[Douglas DC-9| Douglas DC-9-10]]
+|-
+| DC92 || D92 || [[Douglas DC-9| Douglas DC-9-20]]
+|-
+| DC93 || D93 || [[Douglas DC-9| Douglas DC-9-30]]
+|-
+| DC94 || D94 || [[Douglas DC-9| Douglas DC-9-40]]
+|-
+| DC95 || D95 || [[Douglas DC-9| Douglas DC-9-50]]
+|-
+| DH8A || DH1 || [[Bombardier Dash 8|De Havilland Canada DHC-8-100 Dash 8 / 8Q]]
+|-
+| DH8B || DH2 || [[Bombardier Dash 8|De Havilland Canada DHC-8-200 Dash 8 / 8Q]]
+|-
+| DH8C || DH3 || [[Bombardier Dash 8|De Havilland Canada DHC-8-300 Dash 8 / 8Q]]
+|-
+| DH8D || DH4 || [[Bombardier Dash 8|De Havilland Canada DHC-8-400 Dash 8Q]]
+|-
+| DHC5 || DHC || [[De Havilland Canada DHC-5 Buffalo]]
+|-
+| DHC6 || DHT || [[De Havilland Canada DHC-6 Twin Otter]]
+|-
+| DHC7 || DH7 || [[De Havilland Canada DHC-7 Dash 7]]
+|-
+| E110 || EMB || [[Embraer EMB 110 Bandeirante]]
+|-
+| E120 || EM2 || [[Embraer EMB 120 Brasilia]]
+|-
+| E135 || ER3 || [[Embraer RJ135]]
+|-
+| E135 || ERD || [[Embraer ERJ 145 family|Embraer RJ140]]
+|-
+| E145 || ER4 || [[Embraer RJ145]]
+|-
+| E170 || E70 || [[Embraer 170]]
+|-
+| E190 || E90 || [[Embraer 190]] / [[Embraer Lineage 1000|Lineage 1000]]
+|-
+| E195 || E95 || [[Embraer 195]]
+|-
+| E290 || 290 || [[Embraer E-Jet E2 family|Embraer E190-E2]]
+|-
+| E295 || 295 || [[Embraer E-Jet E2 family|Embraer E195-E2]]
+|-
+| E35L || ER3 || [[Embraer Legacy 600|Embraer Legacy 600 / Legacy 650]]
+|-
+| E50P || EP1 || [[Embraer Phenom 100]]
+|-
+| E545 || {{n/a}} || [[Embraer Legacy 450|Embraer Legacy 450 / Praetor 500]]
+|-
+| E550 || {{n/a}} || [[Embraer Legacy 500|Embraer Legacy 500 / Praetor 600]]
+|-
+| E55P || EP3 || [[Embraer Phenom 300]]
+|-
+| E75L || E7W || [[Embraer E-Jet family|Embraer 175 (long wing)]]
+|-
+| E75S || E75 || [[Embraer E-Jet family|Embraer 175 (short wing)]]
+|-
+| EA50 || {{n/a}} || [[Eclipse 500]]
+|-
+| F100 || 100 || [[Fokker 100]]
+|-
+| F27 || F27 || [[Fokker F27 Friendship]]
+|-
+| F28 || F21 || [[Fokker F28 Fellowship]] <!-- IATA codes F21, F22, F23, F24, F28 -->
+|-
+| F2TH || D20 || [[Dassault Falcon 2000]]
+|-
+| F406 || CNT || [[Reims-Cessna F406 Caravan II]]
+|-
+| F50 || F50 || [[Fokker 50]]
+|-
+| F70 || F70 || [[Fokker 70]]
+|-
+| F900 || DF9 || [[Dassault Falcon 900]]
+|-
+| FA50 || DF3 || [[Dassault Falcon 50]]
+|-
+| FA6X || DF6 || [[Dassault Falcon 6X]]
+|-
+| FA7X || DF7 || [[Dassault Falcon 7X]]
+|-
+| G159 || GRS || [[Gulfstream I|Gulfstream Aerospace G-159 Gulfstream I]]
+|-
+| G280 || GR3 || [[Gulfstream G280]]
+|-
+| G73T || GRM || [[Grumman G-73 Turbo Mallard]]
+|-
+| GL5T || CCX || [[Bombardier Global Express#Global 5000|Bombardier Global 5000]]
+|-
+| GLEX || CCX || [[Bombardier Global Express]] / [[Raytheon Sentinel]]
+|-
+| GLF4 || GJ4 || [[Gulfstream IV]]
+|-
+| GLF5 || GJ5 || [[Gulfstream V]]
+|-
+| GLF6 || GJ6 || [[Gulfstream G650]]
+|-
+|GA7C || GL7 ||[[Gulfstream G650/G700/G800|Gulfstream G700]]
+|-
+| H25B || H25 || [[British Aerospace 125|British Aerospace 125 series / Hawker/Raytheon 700/800/800XP/850/900]]
+|-
+| H25C || H25 || [[British Aerospace 125|British Aerospace 125-1000 series / Hawker/Raytheon 1000]]
+|-
+| HDJT || HHJ || [[Honda Jet|Honda HA-420]]
+|-
+| I114 || I14 || [[Ilyushin Il-114]]
+|-
+| IL18 || IL8 || [[Ilyushin Il-18]]
+|-
+| IL62 || IL6 || [[Ilyushin Il-62]]
+|-
+| IL76 || IL7 || [[Ilyushin Il-76]]
+|-
+| IL86 || ILW || [[Ilyushin Il-86]]
+|-
+| IL96 || I93 || [[Ilyushin Il-96]]
+|-
+| J328 || FRJ || [[Fairchild Dornier 328JET]]
+|-
+| JS31 || J31 || [[British Aerospace Jetstream 31]]
+|-
+| JS32 || J32 || [[British Aerospace Jetstream 32]]
+|-
+| JS41 || J41 || [[British Aerospace Jetstream 41]]
+|-
+|K35R
+|K35
+|[[Boeing KC-135 Stratotanker]]
+|-
+| L101 || L10 || [[Lockheed L-1011 Tristar]]
+|-
+| L188 || LOE || [[Lockheed L-188 Electra]]
+|-
+| L410 || L4T || [[LET 410]]
+|-
+| LJ35 || LRJ || [[Learjet 35|Learjet 35 / 36 / C-21A]]
+|-
+| LJ60 || LRJ || [[Learjet 60]]
+|-
+| MD11 || M11 || [[McDonnell Douglas MD-11]]
+|-
+| MD11 || M1F || [[McDonnell Douglas MD-11|McDonnell Douglas MD-11F]]
+|-
+| MD11 || M1M || [[McDonnell Douglas MD-11|McDonnell Douglas MD-11C]]
+|-
+| MD81 || M81 || [[McDonnell Douglas MD-81]]
+|-
+| MD82 || M82 || [[McDonnell Douglas MD-82]]
+|-
+| MD83 || M83 || [[McDonnell Douglas MD-83]]
+|-
+| MD87 || M87 || [[McDonnell Douglas MD-87]]
+|-
+| MD88 || M88 || [[McDonnell Douglas MD-88]]
+|-
+| MD90 || M90 || [[McDonnell Douglas MD-90]]
+|-
+| MU2 || MU2 || [[Mitsubishi Mu-2]]
+|-
+| N262 || ND2 || [[Aérospatiale N 262|Aerospatiale (Nord) 262]]
+|-
+| NOMA || CD2 || [[GAF Nomad|Government Aircraft Factories N22B / N24A Nomad]]
+|-
+| P8 || {{n/a}} || [[Boeing P-8 Poseidon]]
+|-
+| P180 || P18 || [[Piaggio P.180 Avanti]]
+|-
+| PAY2 || {{n/a}} || [[Piper PA-42 Cheyenne|PIPER Cheyenne 2]]
+|-
+| PC12 || PL2 || [[Pilatus PC-12]]
+|-
+| PC24 || PL4 || [[Pilatus PC-24]]
+|-
+| RJ1H || AR1 || [[Avro RJ100]]
+|-
+| RJ70 || AR7 || [[Avro RJ70]]
+|-
+| RJ85 || AR8 || [[Avro RJ85]]
+|-
+| S601 || NDC || [[Aérospatiale Corvette|Aerospatiale SN.601 Corvette]]
+|-
+| SB20 || S20 || [[Saab 2000]]
+|-
+| SC7 || SHS || [[Shorts SC-7| Shorts SC-7 Skyvan]]
+|-
+| SF34 || SF3 || [[Saab SF340| Saab SF340A/B]]
+|-
+| SH33 || SH3 || [[Short 330|Shorts SD.330]]
+|-
+| SH36 || SH6 || [[Short 360|Shorts SD.360]]
+|-
+| SU95 || SU9 || [[Sukhoi Superjet 100-95]]
+|-
+| SW4 || SW4 || [[Fairchild Swearingen Metroliner]]
+|-
+| T134 || TU3 || [[Tupolev Tu-134]]
+|-
+| T154 || TU5 || [[Tupolev Tu-154]]
+|-
+| T204 || T20 || [[Tupolev Tu-204| Tupolev Tu-204 / Tu-214]]
+|-
+| WW24 || WWP || [[IAI Westwind|Israel Aircraft Industries 1124 Westwind]]
+|-
+| Y12 || YN2 || [[Harbin Y-12]]
+|-
+| YK40 || YK4 || [[Yakovlev Yak-40]]
+|-
+| YK42 || YK2 || [[Yakovlev Yak-42]]
+|-
+| YS11 || YS1 || [[NAMC YS-11]]
+|}

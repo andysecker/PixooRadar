@@ -65,6 +65,7 @@ Edit `config.py` for your local setup (Pixoo IP, coordinates, runway heading, un
 ```bash
 python display_flight_data_pizoo.py
 python display_flight_data_pizoo.py --caffeinate
+python display_flight_data_pizoo.py --test-flight
 ```
 
 ## Key Configuration
@@ -94,7 +95,9 @@ Operational behavior:
 
 - Flight view is re-rendered when tracked flight telemetry changes (altitude, speed, heading, status).
 - Flight page 1 displays `CS` + raw altitude in feet (`12,345 ft`), not flight level (`FLxxx`).
-- Flight page 2 displays aircraft text parsed from `aircraft_type` (substring after first space, with ICAO code fallback) and `REG`.
+- Flight page 2 displays aircraft text from ICAO mapping (`aircraft_type_icao -> model_display`) and `REG`.
+- ICAO display map source: `data/icao_model_display_map.json` (10-char-safe values for 64x64 text layout).
+- Fallback behavior when ICAO code is missing from map: parse `aircraft_type` (substring after first space), then ICAO code.
 - Stationary ground targets are filtered out (`altitude<=0` and `ground_speed<=0`).
 - Moving ground targets are filtered as taxiing unless heading aligns with runway heading or reciprocal within `+/-10` degrees.
 - Flight API is polled on a fixed interval (`DATA_REFRESH_SECONDS`) for all flight polling.
@@ -103,6 +106,7 @@ Operational behavior:
 - Pixoo HTTP requests use a finite timeout (5s) to avoid indefinite hangs during device/network failures.
 - Each render path resets stale frame buffers before drawing to prevent frame accumulation after failed renders.
 - Debug render output is written before send to `debug/current_pixoo_render.gif` (single rolling file).
+- `--test-flight` mode emits synthetic flight payloads using `A320` so aircraft mapping logic is exercised.
 - Weather refresh logs include both raw provider payloads (Open-Meteo + METAR) and normalized payload.
 - Each API call logs immediate raw return data:
   - `Open-Meteo raw response: ...`
@@ -163,7 +167,7 @@ Current tests cover:
 - renderer golden snapshots (weather summary, runway diagram hash, holding screen hash)
 - stationary ground-flight filtering
 - taxiing ground-flight filtering (runway-alignment gate for moving ground targets)
-- aircraft display text parsing fallback behavior
+- aircraft display mapping + fallback behavior
 - weather cache and force-refresh behavior
 - settings validation (units, ranges, timings, font paths)
 - Pixoo runway-label font diagnostic error messaging
