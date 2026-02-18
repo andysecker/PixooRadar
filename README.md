@@ -20,6 +20,7 @@ This is no longer the original fork behavior. The app now prioritizes useful alw
 Two-frame weather loop (frame duration configurable):
 
 1. Weather summary
+- Top bar header shows METAR station/time when available (e.g. `LCPH 1130Z`), otherwise `Weather`
 - Temperature
 - Condition
 - Humidity
@@ -106,6 +107,9 @@ Operational behavior:
   - non-gusting: e.g. `NE 10Mph`
   - gusting: e.g. `NE 10/18`
   - unknown direction: `--`
+- Weather summary top header format:
+  - with METAR station+time: `ICAO HHMMZ` (example: `LCPH 1130Z`)
+  - fallback when unavailable: `Weather`
 - On runway weather view, if METAR provides variable wind sector (`dddVddd`), nearest boundary tick marks are highlighted in orange.
 
 ## Refactored Architecture

@@ -28,6 +28,8 @@ def test_weather_uses_metar_for_temp_wind_and_open_meteo_for_condition():
             "wind_dir_to": 290,
             "wind_speed_kph": 12 * 1.852,
             "wind_gust_kph": 18 * 1.852,
+            "metar_station": "LCPH",
+            "metar_time_z": "0850Z",
             "location": "LCPH",
         },
     )
@@ -41,6 +43,8 @@ def test_weather_uses_metar_for_temp_wind_and_open_meteo_for_condition():
     assert payload["wind_dir_to"] == 290
     assert payload["wind_kph"] == pytest.approx(12 * 1.852)
     assert payload["wind_gust_kph"] == pytest.approx(18 * 1.852)
+    assert payload["metar_station"] == "LCPH"
+    assert payload["metar_time_z"] == "0850Z"
     assert payload["humidity_pct"] is not None
     assert payload["source"] == "metar+open-meteo"
 
@@ -74,6 +78,7 @@ def test_parse_metar_with_library_handles_negative_temp_and_variable_wind():
     assert parsed["dewpoint_c"] == -5
     assert parsed["wind_speed_kph"] == pytest.approx(3 * 1.852, rel=0.05)
     assert parsed["wind_dir_deg"] is None
+    assert parsed["metar_time_z"] == "0850Z"
 
 
 def test_parse_metar_with_library_extracts_wind_gust():

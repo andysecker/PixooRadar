@@ -10,6 +10,7 @@ from pixoo_radar.flight.metar import fetch_metar_report
 
 LOGGER = logging.getLogger("pixoo_radar.weather")
 WIND_VARIATION_RE = re.compile(r"\b(\d{3})V(\d{3})\b")
+METAR_TIME_RE = re.compile(r"\b\d{2}(\d{2})(\d{2})Z\b")
 
 
 class WeatherData:
@@ -164,6 +165,8 @@ class WeatherData:
             "wind_dir_deg": metar_fields.get("wind_dir_deg"),
             "wind_dir_from": metar_fields.get("wind_dir_from"),
             "wind_dir_to": metar_fields.get("wind_dir_to"),
+            "metar_station": metar_fields.get("metar_station"),
+            "metar_time_z": metar_fields.get("metar_time_z"),
             "location": metar_fields.get("location") or "LOCAL WX",
             "source": source,
         }
@@ -310,6 +313,18 @@ class WeatherData:
             wind_speed_kph = float(wind_speed_kph)
         if wind_gust_kph is not None:
             wind_gust_kph = float(wind_gust_kph)
+        metar_time_z = None
+        time_match = METAR_TIME_RE.search(raw)
+        if time_match:
+            metar_time_z = f"{time_match.group(1)}{time_match.group(2)}Z"
+        station = str(
+            metar_payload.get("station")
+            or getattr(decoded, "station_id", None)
+            or self.metar_icao
+            or ""
+        ).strip().upper()
+        if not station:
+            station = None
 
         return {
             "temperature_c": temp_c,
@@ -319,7 +334,9 @@ class WeatherData:
             "wind_dir_to": wind_dir_to,
             "wind_speed_kph": wind_speed_kph,
             "wind_gust_kph": wind_gust_kph,
-            "location": metar_payload.get("station") or getattr(decoded, "station_id", None) or "LOCAL WX",
+            "metar_station": station,
+            "metar_time_z": metar_time_z,
+            "location": station or "LOCAL WX",
         }
 
     @staticmethod
