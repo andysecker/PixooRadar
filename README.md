@@ -94,6 +94,7 @@ Operational behavior:
 
 - Flight view is re-rendered when tracked flight telemetry changes (altitude, speed, heading, status).
 - Stationary ground targets are filtered out (`altitude<=0` and `ground_speed<=0`).
+- Moving ground targets are filtered as taxiing unless heading aligns with runway heading or reciprocal within `+/-10` degrees.
 - Flight API is polled on a fixed interval (`DATA_REFRESH_SECONDS`) for all flight polling.
 - No exponential backoff is used for no-flight periods.
 - If Pixoo is offline, flight/weather API polling is paused until reconnect succeeds.
@@ -156,6 +157,7 @@ Current tests cover:
 - runway active-heading and label placement helpers
 - renderer golden snapshots (weather summary, runway diagram hash, holding screen hash)
 - stationary ground-flight filtering
+- taxiing ground-flight filtering (runway-alignment gate for moving ground targets)
 - weather cache and force-refresh behavior
 - settings validation (units, ranges, timings, font paths)
 - Pixoo runway-label font diagnostic error messaging

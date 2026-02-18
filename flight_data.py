@@ -8,7 +8,7 @@ provider/filter/logo/METAR modules.
 import json
 import logging
 
-from config import FLIGHT_SEARCH_RADIUS_METERS, LOGO_BG_COLOR
+from config import FLIGHT_SEARCH_RADIUS_METERS, LOGO_BG_COLOR, RUNWAY_HEADING_DEG
 from pixoo_radar.flight.filters import choose_closest_flight
 from pixoo_radar.flight.logos import LogoManager
 from pixoo_radar.flight.mapping import build_flight_payload
@@ -62,7 +62,12 @@ class FlightData:
             LOGGER.info("Flight API returned no candidates in search area.")
             return None, None
 
-        closest_flight = choose_closest_flight(flights, lat, lon)
+        closest_flight = choose_closest_flight(
+            flights,
+            lat,
+            lon,
+            runway_heading_deg=RUNWAY_HEADING_DEG,
+        )
         if not closest_flight:
             LOGGER.info("No usable flight candidate after filtering.")
             return None, None
