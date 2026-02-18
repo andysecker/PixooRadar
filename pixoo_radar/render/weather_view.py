@@ -5,6 +5,7 @@ from .common import (
     bearing_to_xy,
     center_x,
     draw_line,
+    draw_px,
     fit_text,
     format_humidity,
     format_temp_c,
@@ -25,6 +26,7 @@ COLOR_RWY = "#111111"
 COLOR_RWY_MARK = "#EDEDED"
 COLOR_WIND_ARROW = "#FFD166"
 COLOR_ACTIVE_RWY_ARROW = "#7CFC8A"
+COLOR_HOME_ICON = "#EAF6FF"
 
 
 def wind_speed_value_for_unit(wind_kph, wind_unit: str):
@@ -96,10 +98,38 @@ def choose_runway_label_position(label_w: int, label_h: int, runway_heading_deg:
     return max(0, min(64 - label_w, tx - 2)), max(0, min(64 - label_h, ty + 1))
 
 
+def draw_home_icon(pizzoo, x: int = 1, y: int = 1, color: str = COLOR_HOME_ICON) -> None:
+    """Draw a tiny 10x9 house icon in the runway view corner."""
+    # Roof drawn as explicit pixels for symmetric low-res rendering.
+    roof_pixels = (
+        (4, 0), (5, 0),
+        (3, 1), (6, 1),
+        (2, 2), (7, 2),
+        (1, 3), (8, 3),
+        (0, 4), (9, 4),
+    )
+    for dx, dy in roof_pixels:
+        draw_px(pizzoo, x + dx, y + dy, color)
+
+    # House body outline.
+    for dx in range(1, 9):
+        draw_px(pizzoo, x + dx, y + 4, color)
+        draw_px(pizzoo, x + dx, y + 8, color)
+    for dy in range(4, 9):
+        draw_px(pizzoo, x + 1, y + dy, color)
+        draw_px(pizzoo, x + 8, y + dy, color)
+
+    # Door (2x3).
+    for dy in range(6, 9):
+        draw_px(pizzoo, x + 4, y + dy, color)
+        draw_px(pizzoo, x + 5, y + dy, color)
+
+
 def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg: float, wind_dir_from=None, wind_dir_to=None) -> None:
     cx, cy = 32, 32
     runway_half_len = 22
     pizzoo.draw_rectangle(xy=(0, 0), width=64, height=64, color=COLOR_WX_BG, filled=True)
+    draw_home_icon(pizzoo, x=1, y=1)
 
     highlighted_ticks = set()
     from_tick = nearest_drawn_tick_bearing(wind_dir_from)
@@ -116,7 +146,6 @@ def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg:
         x2, y2 = bearing_to_xy(cx, cy, b, 30)
         tick_color = COLOR_WIND_ARROW if b in highlighted_ticks else COLOR_WX_ACCENT
         draw_line(pizzoo, x1, y1, x2, y2, color=tick_color, thickness=1)
-    pizzoo.draw_text("N", xy=(center_x(64, "N"), -1), font=settings.font_name, color=COLOR_WX_MUTED)
 
     rx0, ry0 = bearing_to_xy(cx, cy, runway_heading_deg, runway_half_len)
     rx1, ry1 = bearing_to_xy(cx, cy, (runway_heading_deg + 180) % 360, runway_half_len)
