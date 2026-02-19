@@ -2,7 +2,6 @@ import logging
 from math import cos, radians, sin
 
 from .common import (
-    COLOR_LABEL,
     bearing_to_xy,
     center_x,
     draw_line,
@@ -283,19 +282,7 @@ def draw_weather_summary_frame(pizzoo, settings, weather: dict) -> None:
     pizzoo.draw_rectangle(xy=(0, 0), width=64, height=11, color=COLOR_WX_ACCENT, filled=True)
     pizzoo.draw_text(weather_header, xy=(2, -1), font=settings.font_name, color=COLOR_WX_TEXT)
 
-    temp_label = "Temp"
-    temp_full = f"{temp_label} {temperature}"
-    temp_x = center_x(64, temp_full)
-
-    humid_label = "Humid"
-    humid_full = f"{humid_label} {humidity}"
-    humid_x = center_x(64, humid_full)
-
     pizzoo.draw_text(metar_line, xy=(center_x(64, metar_line), 13), font=settings.font_name, color=COLOR_WX_TEXT)
-    pizzoo.draw_text(temp_label, xy=(temp_x, 25), font=settings.font_name, color=COLOR_LABEL)
-    temp_value_x = temp_x + measure_text_width(f"{temp_label} ")
-    pizzoo.draw_text(temperature, xy=(temp_value_x, 25), font=settings.font_name, color=COLOR_WX_TEXT)
+    pizzoo.draw_text(temperature, xy=(center_x(64, temperature), 25), font=settings.font_name, color=COLOR_WX_TEXT)
     pizzoo.draw_text(condition, xy=(center_x(64, condition), 37), font=settings.font_name, color=COLOR_WX_TEXT)
-    pizzoo.draw_text(humid_label, xy=(humid_x, 49), font=settings.font_name, color=COLOR_LABEL)
-    humid_value_x = humid_x + measure_text_width(f"{humid_label} ")
-    pizzoo.draw_text(humidity, xy=(humid_value_x, 49), font=settings.font_name, color=COLOR_WX_TEXT)
+    pizzoo.draw_text(humidity, xy=(center_x(64, humidity), 49), font=settings.font_name, color=COLOR_WX_TEXT)

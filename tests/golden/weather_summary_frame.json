@@ -46,19 +46,9 @@
   },
   {
     "op": "draw_text",
-    "text": "Temp",
-    "xy": [
-      8,
-      25
-    ],
-    "font": "splitflap",
-    "color": "#999999"
-  },
-  {
-    "op": "draw_text",
     "text": "22C",
     "xy": [
-      37,
+      23,
       25
     ],
     "font": "splitflap",
@@ -76,19 +66,9 @@
   },
   {
     "op": "draw_text",
-    "text": "Humid",
-    "xy": [
-      5,
-      49
-    ],
-    "font": "splitflap",
-    "color": "#999999"
-  },
-  {
-    "op": "draw_text",
     "text": "55%",
     "xy": [
-      40,
+      23,
       49
     ],
     "font": "splitflap",
