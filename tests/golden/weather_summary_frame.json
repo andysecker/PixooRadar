@@ -42,7 +42,7 @@
       13
     ],
     "font": "splitflap",
-    "color": "#A8C7DE"
+    "color": "#EAF6FF"
   },
   {
     "op": "draw_text",
@@ -72,7 +72,7 @@
       37
     ],
     "font": "splitflap",
-    "color": "#A8C7DE"
+    "color": "#EAF6FF"
   },
   {
     "op": "draw_text",

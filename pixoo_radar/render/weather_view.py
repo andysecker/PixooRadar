@@ -291,11 +291,11 @@ def draw_weather_summary_frame(pizzoo, settings, weather: dict) -> None:
     humid_full = f"{humid_label} {humidity}"
     humid_x = center_x(64, humid_full)
 
-    pizzoo.draw_text(metar_line, xy=(center_x(64, metar_line), 13), font=settings.font_name, color=COLOR_WX_MUTED)
+    pizzoo.draw_text(metar_line, xy=(center_x(64, metar_line), 13), font=settings.font_name, color=COLOR_WX_TEXT)
     pizzoo.draw_text(temp_label, xy=(temp_x, 25), font=settings.font_name, color=COLOR_LABEL)
     temp_value_x = temp_x + measure_text_width(f"{temp_label} ")
     pizzoo.draw_text(temperature, xy=(temp_value_x, 25), font=settings.font_name, color=COLOR_WX_TEXT)
-    pizzoo.draw_text(condition, xy=(center_x(64, condition), 37), font=settings.font_name, color=COLOR_WX_MUTED)
+    pizzoo.draw_text(condition, xy=(center_x(64, condition), 37), font=settings.font_name, color=COLOR_WX_TEXT)
     pizzoo.draw_text(humid_label, xy=(humid_x, 49), font=settings.font_name, color=COLOR_LABEL)
     humid_value_x = humid_x + measure_text_width(f"{humid_label} ")
     pizzoo.draw_text(humidity, xy=(humid_value_x, 49), font=settings.font_name, color=COLOR_WX_TEXT)
