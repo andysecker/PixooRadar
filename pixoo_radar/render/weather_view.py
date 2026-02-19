@@ -2,6 +2,7 @@ import logging
 from math import cos, radians, sin
 
 from .common import (
+    COLOR_LABEL,
     bearing_to_xy,
     center_x,
     draw_line,
@@ -11,8 +12,6 @@ from .common import (
     fit_text,
     format_humidity,
     format_temp_c,
-    format_wind_dir,
-    format_wind_kph,
     measure_text_width,
     runway_designator,
     signed_angle_diff_deg,
@@ -81,9 +80,9 @@ def score_label_placement(tx: int, ty: int, label_w: int, label_h: int, cx: int,
     return clearance, -anchor_dist
 
 
-def choose_runway_label_position(label_w: int, label_h: int, runway_heading_deg: float, anchor_x: float, anchor_y: float):
+def choose_axis_label_position(label_w: int, label_h: int, axis_heading_deg: float, anchor_x: float, anchor_y: float):
     cx, cy = 32, 32
-    rwy_rad = radians(float(runway_heading_deg) % 360.0)
+    rwy_rad = radians(float(axis_heading_deg) % 360.0)
     ux, uy = sin(rwy_rad), -cos(rwy_rad)
     nx, ny = uy, -ux
     best = None
@@ -99,6 +98,40 @@ def choose_runway_label_position(label_w: int, label_h: int, runway_heading_deg:
                     best = (score, tx, ty)
     _, tx, ty = best
     return max(0, min(64 - label_w, tx - 2)), max(0, min(64 - label_h, ty + 1))
+
+
+def choose_runway_label_position(label_w: int, label_h: int, runway_heading_deg: float, anchor_x: float, anchor_y: float):
+    return choose_axis_label_position(label_w, label_h, runway_heading_deg, anchor_x, anchor_y)
+
+
+def choose_wind_label_position(label_w: int, label_h: int, wind_heading_deg: float, anchor_x: float, anchor_y: float):
+    """Place wind label close to wind arrow while avoiding overlap where possible."""
+    cx, cy = 32, 32
+    wind_rad = radians(float(wind_heading_deg) % 360.0)
+    ux, uy = sin(wind_rad), -cos(wind_rad)
+    nx, ny = uy, -ux
+    best = None
+    for side in (1, -1):
+        for n_off in (4, 5, 6):
+            for u_off in (-2, 0, 2):
+                lx = anchor_x + side * n_off * nx + u_off * ux
+                ly = anchor_y + side * n_off * ny + u_off * uy
+                tx_raw = int(round(lx - (label_w / 2)))
+                ty_raw = int(round(ly - (label_h / 2)))
+                tx = max(0, min(64 - label_w, tx_raw))
+                ty = max(0, min(64 - label_h, ty_raw))
+                clearance, _ = score_label_placement(tx, ty, label_w, label_h, cx, cy, nx, ny, anchor_x, anchor_y)
+                if clearance < 2:
+                    continue
+                clamp_penalty = abs(tx - tx_raw) + abs(ty - ty_raw)
+                anchor_dist = abs((tx + (label_w / 2)) - anchor_x) + abs((ty + (label_h / 2)) - anchor_y)
+                score = (clamp_penalty, anchor_dist, -clearance)
+                if best is None or score < best[0]:
+                    best = (score, tx, ty)
+    if best is None:
+        return choose_axis_label_position(label_w, label_h, wind_heading_deg, anchor_x, anchor_y)
+    _, tx, ty = best
+    return tx, ty
 
 
 def draw_home_icon(pizzoo, x: int = 1, y: int = 1, color: str = COLOR_HOME_ICON) -> None:
@@ -128,7 +161,16 @@ def draw_home_icon(pizzoo, x: int = 1, y: int = 1, color: str = COLOR_HOME_ICON)
         draw_px(pizzoo, x + 5, y + dy, color)
 
 
-def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg: float, wind_dir_from=None, wind_dir_to=None) -> None:
+def draw_runway_wind_diagram(
+    pizzoo,
+    settings,
+    wind_dir_deg,
+    runway_heading_deg: float,
+    wind_dir_from=None,
+    wind_dir_to=None,
+    wind_kph=None,
+    wind_gust_kph=None,
+) -> None:
     def view_bearing(bearing_deg: float) -> float:
         return (float(bearing_deg) + RUNWAY_VIEW_ROTATION_DEG) % 360.0
 
@@ -196,6 +238,15 @@ def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg:
         draw_line(pizzoo, ax1, ay1, hx0, hy0, color=COLOR_WIND_ARROW, thickness=1)
         draw_line(pizzoo, ax1, ay1, hx1, hy1, color=COLOR_WIND_ARROW, thickness=1)
 
+        wind_speed = wind_speed_value_for_unit(wind_kph, settings.weather_wind_speed_unit)
+        wind_gust = wind_speed_value_for_unit(wind_gust_kph, settings.weather_wind_speed_unit)
+        if wind_speed is not None:
+            wind_text = f"{wind_speed}/{wind_gust}" if wind_gust is not None else str(wind_speed)
+            label_w, label_h = measure_text_width(wind_text), 7
+            anchor_x, anchor_y = (ax0 + ax1) / 2.0, (ay0 + ay1) / 2.0
+            tx, ty = choose_wind_label_position(label_w, label_h, wind_from_view, anchor_x, anchor_y)
+            pizzoo.draw_text(wind_text, xy=(tx, ty), font=settings.runway_label_font_name, color=COLOR_WIND_ARROW)
+
 
 def build_and_send_weather_idle_screen(pizzoo, settings, weather: dict) -> None:
     ensure_clean_render_buffer(pizzoo)
@@ -208,6 +259,8 @@ def build_and_send_weather_idle_screen(pizzoo, settings, weather: dict) -> None:
         runway_heading_deg=float(settings.runway_heading_deg),
         wind_dir_from=weather.get("wind_dir_from"),
         wind_dir_to=weather.get("wind_dir_to"),
+        wind_kph=weather.get("wind_kph"),
+        wind_gust_kph=weather.get("wind_gust_kph"),
     )
     LOGGER.info("Sending weather idle screen (2 frames, %ss per frame).", settings.weather_view_seconds)
     frame_speed = max(500, int(settings.weather_view_seconds * 1000))
@@ -220,27 +273,29 @@ def draw_weather_summary_frame(pizzoo, settings, weather: dict) -> None:
     condition = fit_text(str(weather.get("condition") or "NO DATA").upper(), 10)
     temperature = format_temp_c(weather.get("temperature_c"))
     humidity = format_humidity(weather.get("humidity_pct"))
-    wind = format_wind_kph(weather.get("wind_kph"), settings.weather_wind_speed_unit)
-    wind_speed = wind_speed_value_for_unit(weather.get("wind_kph"), settings.weather_wind_speed_unit)
-    wind_gust = wind_speed_value_for_unit(weather.get("wind_gust_kph"), settings.weather_wind_speed_unit)
-    wind_dir_deg = normalize_wind_dir_deg(weather.get("wind_dir_deg"))
-    wind_dir = format_wind_dir(wind_dir_deg) if wind_dir_deg is not None else None
-    metar_station = str(weather.get("metar_station") or "").strip().upper()
-    metar_time_z = str(weather.get("metar_time_z") or "").strip().upper()
-    weather_header = fit_text(f"{metar_station} {metar_time_z}", 10) if metar_station and metar_time_z else "Weather"
+    metar_station = str(weather.get("metar_station") or "").strip().upper() or "----"
+    metar_time_z = str(weather.get("metar_time_z") or "").strip().upper() or "-----"
+    weather_header = "Weather"
+    metar_line = fit_text(f"{metar_station} {metar_time_z}", 10)
 
     pizzoo.cls()
     pizzoo.draw_rectangle(xy=(0, 0), width=64, height=64, color=COLOR_WX_BG, filled=True)
     pizzoo.draw_rectangle(xy=(0, 0), width=64, height=11, color=COLOR_WX_ACCENT, filled=True)
     pizzoo.draw_text(weather_header, xy=(2, -1), font=settings.font_name, color=COLOR_WX_TEXT)
-    hum_line = fit_text(f"HUM {humidity}", 10)
-    if wind_gust is not None and wind_speed is not None:
-        wind_text = f"{wind_speed}/{wind_gust}"
-        wind_line = fit_text(f"{wind_dir} {wind_text}", 10) if wind_dir else fit_text(f"-- {wind_text}", 10)
-    else:
-        wind_text = wind.replace(" ", "")
-        wind_line = fit_text(f"{wind_dir} {wind_text}", 10) if wind_dir else fit_text(f"-- {wind_text}", 10)
-    pizzoo.draw_text(temperature, xy=(center_x(64, temperature), 13), font=settings.font_name, color=COLOR_WX_TEXT)
-    pizzoo.draw_text(condition, xy=(center_x(64, condition), 25), font=settings.font_name, color=COLOR_WX_MUTED)
-    pizzoo.draw_text(hum_line, xy=(center_x(64, hum_line), 37), font=settings.font_name, color=COLOR_WX_TEXT)
-    pizzoo.draw_text(wind_line, xy=(center_x(64, wind_line), 49), font=settings.font_name, color=COLOR_WX_TEXT)
+
+    temp_label = "Temp"
+    temp_full = f"{temp_label} {temperature}"
+    temp_x = center_x(64, temp_full)
+
+    humid_label = "Humid"
+    humid_full = f"{humid_label} {humidity}"
+    humid_x = center_x(64, humid_full)
+
+    pizzoo.draw_text(metar_line, xy=(center_x(64, metar_line), 13), font=settings.font_name, color=COLOR_WX_MUTED)
+    pizzoo.draw_text(temp_label, xy=(temp_x, 25), font=settings.font_name, color=COLOR_LABEL)
+    temp_value_x = temp_x + measure_text_width(f"{temp_label} ")
+    pizzoo.draw_text(temperature, xy=(temp_value_x, 25), font=settings.font_name, color=COLOR_WX_TEXT)
+    pizzoo.draw_text(condition, xy=(center_x(64, condition), 37), font=settings.font_name, color=COLOR_WX_MUTED)
+    pizzoo.draw_text(humid_label, xy=(humid_x, 49), font=settings.font_name, color=COLOR_LABEL)
+    humid_value_x = humid_x + measure_text_width(f"{humid_label} ")
+    pizzoo.draw_text(humidity, xy=(humid_value_x, 49), font=settings.font_name, color=COLOR_WX_TEXT)

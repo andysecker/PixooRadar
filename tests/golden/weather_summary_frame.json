@@ -36,10 +36,30 @@
   },
   {
     "op": "draw_text",
+    "text": "---- -----",
+    "xy": [
+      2,
+      13
+    ],
+    "font": "splitflap",
+    "color": "#A8C7DE"
+  },
+  {
+    "op": "draw_text",
+    "text": "Temp",
+    "xy": [
+      8,
+      25
+    ],
+    "font": "splitflap",
+    "color": "#999999"
+  },
+  {
+    "op": "draw_text",
     "text": "22C",
     "xy": [
-      23,
-      13
+      37,
+      25
     ],
     "font": "splitflap",
     "color": "#EAF6FF"
@@ -49,26 +69,26 @@
     "text": "CLEAR",
     "xy": [
       17,
-      25
+      37
     ],
     "font": "splitflap",
     "color": "#A8C7DE"
   },
   {
     "op": "draw_text",
-    "text": "HUM 55%",
+    "text": "Humid",
     "xy": [
-      11,
-      37
+      5,
+      49
     ],
     "font": "splitflap",
-    "color": "#EAF6FF"
+    "color": "#999999"
   },
   {
     "op": "draw_text",
-    "text": "NE 10Mph",
+    "text": "55%",
     "xy": [
-      8,
+      40,
       49
     ],
     "font": "splitflap",

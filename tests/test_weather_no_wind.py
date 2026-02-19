@@ -30,7 +30,7 @@ def _settings():
     )
 
 
-def test_weather_summary_omits_wind_direction_when_missing():
+def test_weather_summary_uses_dashes_on_metar_line_without_metar():
     recorder = RecordingPizzoo()
     draw_weather_summary_frame(
         recorder,
@@ -43,8 +43,8 @@ def test_weather_summary_omits_wind_direction_when_missing():
             "wind_dir_deg": None,
         },
     )
-    bottom_text = [op["text"] for op in recorder.ops if op.get("op") == "draw_text" and op.get("xy", [None, None])[1] == 49]
-    assert bottom_text == ["-- 10Mph"]
+    metar_text = [op["text"] for op in recorder.ops if op.get("op") == "draw_text" and op.get("xy", [None, None])[1] == 13]
+    assert metar_text == ["---- -----"]
 
 
 def test_weather_summary_uses_metar_header_when_station_and_time_available():
@@ -63,10 +63,12 @@ def test_weather_summary_uses_metar_header_when_station_and_time_available():
         },
     )
     header_text = [op["text"] for op in recorder.ops if op.get("op") == "draw_text" and op.get("xy") == [2, -1]]
-    assert header_text == ["LCPH 1130Z"]
+    metar_text = [op["text"] for op in recorder.ops if op.get("op") == "draw_text" and op.get("xy", [None, None])[1] == 13]
+    assert header_text == ["Weather"]
+    assert metar_text == ["LCPH 1130Z"]
 
 
-def test_weather_summary_shows_gust_format_when_available():
+def test_weather_summary_reuses_header_text_on_metar_line_with_gust_data():
     recorder = RecordingPizzoo()
     draw_weather_summary_frame(
         recorder,
@@ -80,8 +82,8 @@ def test_weather_summary_shows_gust_format_when_available():
             "wind_dir_deg": 45.0,
         },
     )
-    bottom_text = [op["text"] for op in recorder.ops if op.get("op") == "draw_text" and op.get("xy", [None, None])[1] == 49]
-    assert bottom_text == ["NE 10/18"]
+    metar_text = [op["text"] for op in recorder.ops if op.get("op") == "draw_text" and op.get("xy", [None, None])[1] == 13]
+    assert metar_text == ["---- -----"]
 
 
 def test_runway_diagram_omits_wind_and_active_runway_arrows_when_wind_direction_missing():
@@ -112,3 +114,36 @@ def test_runway_diagram_highlights_variable_wind_ticks_when_range_available():
         if op.get("op") == "draw_rectangle" and op.get("color") == COLOR_WIND_ARROW and op.get("width") == 1 and op.get("height") == 1
     ]
     assert orange_ticks
+
+
+def test_runway_diagram_draws_wind_speed_label_near_wind_arrow():
+    recorder = RecordingPizzoo()
+    draw_runway_wind_diagram(
+        recorder,
+        _settings(),
+        wind_dir_deg=90.0,
+        runway_heading_deg=110.0,
+        wind_kph=16.0,
+    )
+    labels = [
+        op for op in recorder.ops
+        if op.get("op") == "draw_text" and op.get("text") == "10" and op.get("color") == COLOR_WIND_ARROW
+    ]
+    assert labels
+
+
+def test_runway_diagram_draws_wind_speed_and_gust_label():
+    recorder = RecordingPizzoo()
+    draw_runway_wind_diagram(
+        recorder,
+        _settings(),
+        wind_dir_deg=90.0,
+        runway_heading_deg=110.0,
+        wind_kph=16.0934,
+        wind_gust_kph=28.968,
+    )
+    labels = [
+        op for op in recorder.ops
+        if op.get("op") == "draw_text" and op.get("text") == "10/18" and op.get("color") == COLOR_WIND_ARROW
+    ]
+    assert labels
