@@ -176,7 +176,7 @@ def build_and_send_animation(pizzoo, settings, data: dict) -> None:
     heading = data.get("heading")
 
     info_pages = [
-        (("CS", callsign), ("__ALT_RAW_FT__", altitude)),
+        (("FLT", callsign), ("__ALT_RAW_FT__", altitude)),
         (("__TEXT_ONLY__", aircraft), ("REG", registration)),
         (("SPD", format_speed(speed, settings.flight_speed_unit)), ("HDG", format_heading(heading))),
     ]
