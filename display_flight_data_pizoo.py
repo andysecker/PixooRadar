@@ -5,6 +5,7 @@ import logging
 import os
 import subprocess
 import sys
+from logging.handlers import TimedRotatingFileHandler
 
 from pixoo_radar.controller import PixooRadarController
 from pixoo_radar.models import FlightSnapshot, WeatherSnapshot
@@ -19,11 +20,35 @@ def configure_logging(level_name: str, verbose_events: bool) -> None:
     level = getattr(logging, level_name, logging.INFO)
     if not verbose_events and level < logging.WARNING:
         level = logging.WARNING
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+
+    formatter = logging.Formatter(
+        "%(asctime)s %(levelname)s [%(name)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+    root_logger.handlers.clear()
+
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    root_logger.addHandler(console_handler)
+
+    # Persistent daily rolling logs: keep 7 days in logs/pixoo_radar.log.
+    log_dir = "logs"
+    log_file = os.path.join(log_dir, "pixoo_radar.log")
+    try:
+        os.makedirs(log_dir, exist_ok=True)
+        file_handler = TimedRotatingFileHandler(
+            filename=log_file,
+            when="midnight",
+            interval=1,
+            backupCount=7,
+            encoding="utf-8",
+        )
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
+    except OSError as exc:
+        root_logger.warning("File logging disabled; cannot initialize '%s': %s", log_file, exc)
 
 
 class DemoFlightService:

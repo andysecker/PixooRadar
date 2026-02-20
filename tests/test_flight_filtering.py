@@ -61,6 +61,14 @@ def test_ground_movement_aligned_with_runway_heading_is_allowed():
     assert data["icao24"] == "icao1"
 
 
+def test_ground_target_aligned_but_zero_speed_is_excluded():
+    # Even when heading aligns with runway, speed must be > 0 to be shown.
+    aligned_stationary = _flight(icao="icao1", altitude=0, ground_speed=0, heading=112)
+    fd = FlightData(fr_api=FakeApi([aligned_stationary]))
+    data = fd.get_closest_flight_data(1.0, 1.0, save_logo=False)
+    assert data is None
+
+
 def test_ground_movement_not_aligned_with_runway_is_excluded():
     taxiing = _flight(icao="icao1", altitude=0, ground_speed=15, heading=200)
     fd = FlightData(fr_api=FakeApi([taxiing]))

@@ -85,6 +85,7 @@ All runtime settings are in `config.py`.
 - Units: `FLIGHT_SPEED_UNIT` (`mph` or `kt`), `WEATHER_WIND_SPEED_UNIT` (`mph` or `kmh`; legacy `kph` accepted)
 - Fonts: `FONT_NAME`, `FONT_PATH`, `RUNWAY_LABEL_FONT_NAME`, `RUNWAY_LABEL_FONT_PATH` (required)
 - Logging: `LOG_LEVEL`, `LOG_VERBOSE_EVENTS`
+- App logs are written to console and to `logs/pixoo_radar.log` with daily rotation (7 days retained).
 - Startup validates config values and file paths and exits with clear errors if invalid.
 - Startup validates weather sources by fetching Open-Meteo (and METAR when configured) before entering the main loop.
 - If `WEATHER_METAR_ICAO` is set, startup also hard-fails unless dependencies `metar`, `timezonefinder`, and `airportsdata` are installed.
@@ -118,6 +119,7 @@ Operational behavior:
   - `METAR raw response (ICAO): ...`
 - METAR raw string is logged on every weather refresh.
 - FlightRadar selected-flight/details raw payload dumps are available at `DEBUG` level only (to avoid very large `INFO` logs).
+- Log file retention: `logs/pixoo_radar.log` rolls daily at local midnight and keeps the most recent 7 days.
 - Weather wind line format:
   - non-gusting: e.g. `NE 10Mph`
   - gusting: e.g. `NE 10/18`
