@@ -1,0 +1,21 @@
+{
+  "branch": "weather-screen-experiments",
+  "status": "paused",
+  "scope": "Weather screen layout and runway wind annotation readability",
+  "completed": [
+    "Moved METAR summary into Weather 1 data rows",
+    "Removed Temp/Humid labels from Weather 1",
+    "Set Weather 1 values to white for contrast",
+    "Anchored runway wind-speed label to wind-arrow shaft midpoint",
+    "Added runway-overlap detection and opposite-side fallback for wind-speed label placement"
+  ],
+  "deferred": [
+    "Final decision on dual numeric overlays in runway view",
+    "Potential redesign: diagram-only runway view or time-multiplexed numeric overlays"
+  ],
+  "validation": {
+    "compile_check": "python3 -m py_compile pixoo_radar/render/weather_view.py tests/test_weather_no_wind.py",
+    "pytest_note": "Run in venv where pytest is installed"
+  },
+  "resume_hint": "Switch to this branch and review docs/experiments/weather-screen-experiments.md first."
+}

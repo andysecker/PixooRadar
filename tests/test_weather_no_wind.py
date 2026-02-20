@@ -1,4 +1,12 @@
-from pixoo_radar.render.weather_view import COLOR_ACTIVE_RWY_ARROW, COLOR_WIND_ARROW, draw_runway_wind_diagram, draw_weather_summary_frame
+from pixoo_radar.render.common import bearing_to_xy, measure_text_width
+from pixoo_radar.render.weather_view import (
+    COLOR_ACTIVE_RWY_ARROW,
+    COLOR_WIND_ARROW,
+    RUNWAY_VIEW_ROTATION_DEG,
+    draw_runway_wind_diagram,
+    draw_weather_summary_frame,
+    label_overlaps_runway,
+)
 from pixoo_radar.settings import AppSettings
 from tests.render_recorder import RecordingPizzoo
 
@@ -147,3 +155,46 @@ def test_runway_diagram_draws_wind_speed_and_gust_label():
         if op.get("op") == "draw_text" and op.get("text") == "10/18" and op.get("color") == COLOR_WIND_ARROW
     ]
     assert labels
+
+
+def test_runway_diagram_wind_label_avoids_runway_overlap():
+    settings = _settings()
+    runway_heading = float(settings.runway_heading_deg)
+    cx, cy = 32, 32
+
+    def view_bearing(bearing_deg: float) -> float:
+        return (float(bearing_deg) + RUNWAY_VIEW_ROTATION_DEG) % 360.0
+
+    rx0, ry0 = bearing_to_xy(cx, cy, view_bearing(runway_heading), 22)
+    rx1, ry1 = bearing_to_xy(cx, cy, view_bearing((runway_heading + 180.0) % 360.0), 22)
+
+    for wind_dir in (80.0, 90.0, 100.0, 110.0, 120.0, 130.0):
+        recorder = RecordingPizzoo()
+        draw_runway_wind_diagram(
+            recorder,
+            settings,
+            wind_dir_deg=wind_dir,
+            runway_heading_deg=runway_heading,
+            wind_kph=16.0934,
+            wind_gust_kph=28.968,
+        )
+        labels = [
+            op
+            for op in recorder.ops
+            if op.get("op") == "draw_text" and op.get("text") == "10/18" and op.get("color") == COLOR_WIND_ARROW
+        ]
+        assert labels
+        label = labels[-1]
+        label_x, label_y = label["xy"]
+        label_w, label_h = measure_text_width(label["text"]), 7
+        assert not label_overlaps_runway(
+            label_x,
+            label_y,
+            label_w,
+            label_h,
+            rx0,
+            ry0,
+            rx1,
+            ry1,
+            runway_thickness=7,
+        )

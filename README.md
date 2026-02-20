@@ -189,3 +189,4 @@ This project currently uses local validation rather than hosted CI.
 - `config.py` is intended to stay local and untracked.
 - If using a Raspberry Pi, run this under `systemd` or `screen` for 24/7 uptime.
 - Flight API behavior can vary; this app now polls at a fixed interval (`DATA_REFRESH_SECONDS`).
+- Branch experiment notes are tracked under `docs/experiments/` (human summary + machine-readable snapshot).

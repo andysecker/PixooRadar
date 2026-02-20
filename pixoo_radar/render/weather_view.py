@@ -103,33 +103,150 @@ def choose_runway_label_position(label_w: int, label_h: int, runway_heading_deg:
     return choose_axis_label_position(label_w, label_h, runway_heading_deg, anchor_x, anchor_y)
 
 
-def choose_wind_label_position(label_w: int, label_h: int, wind_heading_deg: float, anchor_x: float, anchor_y: float):
+def segment_intersects_rect(
+    x0: float,
+    y0: float,
+    x1: float,
+    y1: float,
+    left: float,
+    top: float,
+    right: float,
+    bottom: float,
+) -> bool:
+    """Return True when the line segment intersects an axis-aligned rectangle."""
+    dx = x1 - x0
+    dy = y1 - y0
+    p = (-dx, dx, -dy, dy)
+    q = (x0 - left, right - x0, y0 - top, bottom - y0)
+    t0, t1 = 0.0, 1.0
+
+    for pi, qi in zip(p, q):
+        if pi == 0:
+            if qi < 0:
+                return False
+            continue
+
+        t = qi / pi
+        if pi < 0:
+            if t > t1:
+                return False
+            t0 = max(t0, t)
+        else:
+            if t < t0:
+                return False
+            t1 = min(t1, t)
+
+    return True
+
+
+def label_overlaps_runway(
+    label_x: int,
+    label_y: int,
+    label_w: int,
+    label_h: int,
+    runway_x0: int,
+    runway_y0: int,
+    runway_x1: int,
+    runway_y1: int,
+    runway_thickness: int = 7,
+    padding: int = 1,
+) -> bool:
+    """
+    Return True when label rectangle intersects the rendered runway stroke area.
+
+    We treat this as center-line vs. expanded label-rect intersection, where the
+    expansion radius approximates half runway thickness + safety padding.
+    """
+    half_thickness = max(0, (int(runway_thickness) - 1) // 2)
+    expand = half_thickness + max(0, int(padding))
+    left = label_x - expand
+    top = label_y - expand
+    right = label_x + label_w - 1 + expand
+    bottom = label_y + label_h - 1 + expand
+    return segment_intersects_rect(
+        float(runway_x0),
+        float(runway_y0),
+        float(runway_x1),
+        float(runway_y1),
+        float(left),
+        float(top),
+        float(right),
+        float(bottom),
+    )
+
+
+def choose_wind_label_position(
+    label_w: int,
+    label_h: int,
+    wind_heading_deg: float,
+    anchor_x: float,
+    anchor_y: float,
+    runway_segment: tuple[int, int, int, int] | None = None,
+    runway_thickness: int = 7,
+):
     """Place wind label close to wind arrow while avoiding overlap where possible."""
     cx, cy = 32, 32
     wind_rad = radians(float(wind_heading_deg) % 360.0)
     ux, uy = sin(wind_rad), -cos(wind_rad)
     nx, ny = uy, -ux
-    best = None
-    for side in (1, -1):
-        for n_off in (4, 5, 6):
-            for u_off in (-2, 0, 2):
-                lx = anchor_x + side * n_off * nx + u_off * ux
-                ly = anchor_y + side * n_off * ny + u_off * uy
-                tx_raw = int(round(lx - (label_w / 2)))
-                ty_raw = int(round(ly - (label_h / 2)))
-                tx = max(0, min(64 - label_w, tx_raw))
-                ty = max(0, min(64 - label_h, ty_raw))
-                clearance, _ = score_label_placement(tx, ty, label_w, label_h, cx, cy, nx, ny, anchor_x, anchor_y)
-                if clearance < 2:
-                    continue
-                clamp_penalty = abs(tx - tx_raw) + abs(ty - ty_raw)
-                anchor_dist = abs((tx + (label_w / 2)) - anchor_x) + abs((ty + (label_h / 2)) - anchor_y)
-                score = (clamp_penalty, anchor_dist, -clearance)
-                if best is None or score < best[0]:
-                    best = (score, tx, ty)
+
+    def pick_best(side_filter: int | None = None, disallow_runway_overlap: bool = False):
+        best = None
+        for side in (1, -1):
+            if side_filter is not None and side != side_filter:
+                continue
+            for n_off in (4, 5, 6):
+                for u_off in (-2, 0, 2):
+                    lx = anchor_x + side * n_off * nx + u_off * ux
+                    ly = anchor_y + side * n_off * ny + u_off * uy
+                    tx_raw = int(round(lx - (label_w / 2)))
+                    ty_raw = int(round(ly - (label_h / 2)))
+                    tx = max(0, min(64 - label_w, tx_raw))
+                    ty = max(0, min(64 - label_h, ty_raw))
+                    clearance, _ = score_label_placement(tx, ty, label_w, label_h, cx, cy, nx, ny, anchor_x, anchor_y)
+                    if clearance < 2:
+                        continue
+                    if disallow_runway_overlap and runway_segment is not None:
+                        if label_overlaps_runway(
+                            tx,
+                            ty,
+                            label_w,
+                            label_h,
+                            runway_segment[0],
+                            runway_segment[1],
+                            runway_segment[2],
+                            runway_segment[3],
+                            runway_thickness=runway_thickness,
+                        ):
+                            continue
+                    clamp_penalty = abs(tx - tx_raw) + abs(ty - ty_raw)
+                    anchor_dist = abs((tx + (label_w / 2)) - anchor_x) + abs((ty + (label_h / 2)) - anchor_y)
+                    score = (clamp_penalty, anchor_dist, -clearance)
+                    if best is None or score < best[0]:
+                        best = (score, tx, ty, side)
+        return best
+
+    best = pick_best()
     if best is None:
         return choose_axis_label_position(label_w, label_h, wind_heading_deg, anchor_x, anchor_y)
-    _, tx, ty = best
+
+    _, tx, ty, side = best
+    if runway_segment is not None and label_overlaps_runway(
+        tx,
+        ty,
+        label_w,
+        label_h,
+        runway_segment[0],
+        runway_segment[1],
+        runway_segment[2],
+        runway_segment[3],
+        runway_thickness=runway_thickness,
+    ):
+        opposite = pick_best(side_filter=-side, disallow_runway_overlap=True)
+        if opposite is None:
+            opposite = pick_best(side_filter=-side, disallow_runway_overlap=False)
+        if opposite is not None:
+            _, tx, ty, _ = opposite
     return tx, ty
 
 
@@ -243,7 +360,15 @@ def draw_runway_wind_diagram(
             wind_text = f"{wind_speed}/{wind_gust}" if wind_gust is not None else str(wind_speed)
             label_w, label_h = measure_text_width(wind_text), 7
             anchor_x, anchor_y = (ax0 + ax1) / 2.0, (ay0 + ay1) / 2.0
-            tx, ty = choose_wind_label_position(label_w, label_h, wind_from_view, anchor_x, anchor_y)
+            tx, ty = choose_wind_label_position(
+                label_w,
+                label_h,
+                wind_from_view,
+                anchor_x,
+                anchor_y,
+                runway_segment=(rx0, ry0, rx1, ry1),
+                runway_thickness=7,
+            )
             pizzoo.draw_text(wind_text, xy=(tx, ty), font=settings.runway_label_font_name, color=COLOR_WIND_ARROW)
 
 
