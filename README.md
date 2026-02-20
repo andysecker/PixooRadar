@@ -23,6 +23,7 @@ Two-frame weather loop (frame duration configurable):
 - Top bar header shows METAR station/time when available in human-friendly local format (e.g. `PFO 1330`), otherwise `Weather`
   - Station uses IATA code when mappable from METAR ICAO; otherwise ICAO is used
   - Time is converted from METAR UTC to local time using timezone derived from `LATITUDE`/`LONGITUDE`
+  - Header text is centered in the top accent bar
 - Temperature
 - Condition
 - Humidity
@@ -122,7 +123,9 @@ Operational behavior:
   - gusting: e.g. `NE 10/18`
   - unknown direction: `--`
 - Weather summary top header format:
-  - with METAR station+time: `ICAO HHMMZ` (example: `LCPH 1130Z`)
+  - with METAR station+time: `IATA HHMM` local (example: `PFO 1330`)
+  - fallback when IATA mapping is unavailable: `ICAO HHMM` local
+  - fallback when local-time conversion is unavailable: `ICAO HHMMZ` from METAR
   - fallback when unavailable: `Weather`
 - On runway weather view, if METAR provides variable wind sector (`dddVddd`), nearest boundary tick marks are highlighted in orange.
 

@@ -64,7 +64,11 @@ def test_weather_summary_uses_metar_header_when_station_and_time_available():
             "metar_time_local": "1330",
         },
     )
-    header_text = [op["text"] for op in recorder.ops if op.get("op") == "draw_text" and op.get("xy") == [2, -1]]
+    header_text = [
+        op["text"]
+        for op in recorder.ops
+        if op.get("op") == "draw_text" and op.get("xy", [None, None])[1] == -1
+    ]
     assert header_text == ["PFO 1330"]
 
 

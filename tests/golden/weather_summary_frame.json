@@ -28,7 +28,7 @@
     "op": "draw_text",
     "text": "Weather",
     "xy": [
-      2,
+      11,
       -1
     ],
     "font": "splitflap",

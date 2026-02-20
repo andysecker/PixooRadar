@@ -234,7 +234,7 @@ def draw_weather_summary_frame(pizzoo, settings, weather: dict) -> None:
     pizzoo.cls()
     pizzoo.draw_rectangle(xy=(0, 0), width=64, height=64, color=COLOR_WX_BG, filled=True)
     pizzoo.draw_rectangle(xy=(0, 0), width=64, height=11, color=COLOR_WX_ACCENT, filled=True)
-    pizzoo.draw_text(weather_header, xy=(2, -1), font=settings.font_name, color=COLOR_WX_TEXT)
+    pizzoo.draw_text(weather_header, xy=(center_x(64, weather_header), -1), font=settings.font_name, color=COLOR_WX_TEXT)
     hum_line = fit_text(f"HUM {humidity}", 10)
     if wind_gust is not None and wind_speed is not None:
         wind_text = f"{wind_speed}/{wind_gust}"
