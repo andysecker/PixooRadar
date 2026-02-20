@@ -20,7 +20,9 @@ This is no longer the original fork behavior. The app now prioritizes useful alw
 Two-frame weather loop (frame duration configurable):
 
 1. Weather summary
-- Top bar header shows METAR station/time when available (e.g. `LCPH 1130Z`), otherwise `Weather`
+- Top bar header shows METAR station/time when available in human-friendly local format (e.g. `PFO 1330`), otherwise `Weather`
+  - Station uses IATA code when mappable from METAR ICAO; otherwise ICAO is used
+  - Time is converted from METAR UTC to local time using timezone derived from `LATITUDE`/`LONGITUDE`
 - Temperature
 - Condition
 - Humidity
@@ -47,7 +49,7 @@ Two-frame weather loop (frame duration configurable):
 - Python 3.10+
 - Pixoo64 on your local network
 - Internet access for FlightRadar24/Open-Meteo/NOAA METAR APIs
-- Python package `metar` when `WEATHER_METAR_ICAO` is configured
+- Python packages `metar`, `timezonefinder`, and `airportsdata` when `WEATHER_METAR_ICAO` is configured
 
 ## Install
 
@@ -84,7 +86,7 @@ All runtime settings are in `config.py`.
 - Logging: `LOG_LEVEL`, `LOG_VERBOSE_EVENTS`
 - Startup validates config values and file paths and exits with clear errors if invalid.
 - Startup validates weather sources by fetching Open-Meteo (and METAR when configured) before entering the main loop.
-- If `WEATHER_METAR_ICAO` is set, startup also hard-fails unless dependency `metar` is installed.
+- If `WEATHER_METAR_ICAO` is set, startup also hard-fails unless dependencies `metar`, `timezonefinder`, and `airportsdata` are installed.
 
 ## Runtime Behavior
 

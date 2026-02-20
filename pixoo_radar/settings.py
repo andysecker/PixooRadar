@@ -81,6 +81,16 @@ def validate_settings(settings: AppSettings) -> AppSettings:
         errors.append("WEATHER_METAR_ICAO must be a 4-character ICAO station code when set.")
     if settings.weather_metar_icao and find_spec("metar") is None:
         errors.append("WEATHER_METAR_ICAO is set, but dependency 'metar' is not installed. Install with: pip install metar")
+    if settings.weather_metar_icao and find_spec("timezonefinder") is None:
+        errors.append(
+            "WEATHER_METAR_ICAO is set, but dependency 'timezonefinder' is not installed. "
+            "Install with: pip install timezonefinder"
+        )
+    if settings.weather_metar_icao and find_spec("airportsdata") is None:
+        errors.append(
+            "WEATHER_METAR_ICAO is set, but dependency 'airportsdata' is not installed. "
+            "Install with: pip install airportsdata"
+        )
     if find_spec("openmeteo_requests") is None:
         errors.append(
             "Dependency 'openmeteo-requests' is required for weather idle view. "

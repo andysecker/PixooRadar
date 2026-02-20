@@ -2,21 +2,24 @@
 
 import logging
 import re
+from datetime import datetime, timezone
 from math import ceil, exp
 from time import monotonic
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pixoo_radar.flight.metar import fetch_metar_report
 
 
 LOGGER = logging.getLogger("pixoo_radar.weather")
 WIND_VARIATION_RE = re.compile(r"\b(\d{3})V(\d{3})\b")
-METAR_TIME_RE = re.compile(r"\b\d{2}(\d{2})(\d{2})Z\b")
+METAR_TIME_RE = re.compile(r"\b(\d{2})(\d{2})(\d{2})Z\b")
 
 
 class WeatherData:
     """Fetch and cache weather payloads for idle display mode."""
 
     OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
+    _AIRPORTS_BY_ICAO_CACHE = None
     WEATHER_CODE_LABELS = {
         0: "CLEAR",
         1: "MAINLY CLR",
@@ -57,6 +60,9 @@ class WeatherData:
         provider=None,
         metar_fetcher=None,
         metar_parser=None,
+        timezone_name: str | None = None,
+        iata_mapper=None,
+        utc_now_provider=None,
     ):
         self.latitude = latitude
         self.longitude = longitude
@@ -65,6 +71,18 @@ class WeatherData:
         self.provider = provider or self._fetch_from_provider
         self.metar_fetcher = metar_fetcher or fetch_metar_report
         self.metar_parser = metar_parser or self._parse_metar_fields_with_library
+        self._iata_mapper = iata_mapper or self._icao_to_iata
+        self._utc_now_provider = utc_now_provider or (lambda: datetime.now(timezone.utc))
+        self._local_timezone_name = str(timezone_name or "").strip() if timezone_name else None
+        if self.metar_icao and not self._local_timezone_name:
+            self._local_timezone_name = self._resolve_timezone_name_from_coordinates()
+        if self._local_timezone_name:
+            LOGGER.info(
+                "Resolved local timezone from coordinates (%.4f, %.4f): %s",
+                self.latitude,
+                self.longitude,
+                self._local_timezone_name,
+            )
         self._cache = None
         self._cache_at = 0.0
         self._last_error = None
@@ -165,6 +183,9 @@ class WeatherData:
             source = "metar+open-meteo" if condition is not None else "metar"
         else:
             source = "open-meteo"
+        metar_station = metar_fields.get("metar_station")
+        metar_station_iata = self._iata_mapper(metar_station) if metar_station else None
+        metar_time_local = self._metar_time_local_hhmm(metar, metar_fields)
 
         return {
             "temperature_c": temp_c,
@@ -175,8 +196,10 @@ class WeatherData:
             "wind_dir_deg": metar_fields.get("wind_dir_deg"),
             "wind_dir_from": metar_fields.get("wind_dir_from"),
             "wind_dir_to": metar_fields.get("wind_dir_to"),
-            "metar_station": metar_fields.get("metar_station"),
+            "metar_station": metar_station,
+            "metar_station_iata": metar_station_iata,
             "metar_time_z": metar_fields.get("metar_time_z"),
+            "metar_time_local": metar_time_local,
             "location": metar_fields.get("location") or "LOCAL WX",
             "source": source,
         }
@@ -258,6 +281,119 @@ class WeatherData:
             "metar_icao": self.metar_icao or None,
         }
 
+    def _resolve_timezone_name_from_coordinates(self):
+        try:
+            from timezonefinder import TimezoneFinder
+        except ModuleNotFoundError:
+            LOGGER.warning("Missing dependency `timezonefinder`; install with: pip install timezonefinder")
+            return None
+        finder = TimezoneFinder()
+        timezone_name = finder.timezone_at(lat=self.latitude, lng=self.longitude)
+        if not timezone_name:
+            timezone_name = finder.closest_timezone_at(lat=self.latitude, lng=self.longitude)
+        return str(timezone_name).strip() if timezone_name else None
+
+    @classmethod
+    def _airports_by_icao(cls):
+        if cls._AIRPORTS_BY_ICAO_CACHE is None:
+            try:
+                import airportsdata
+            except ModuleNotFoundError:
+                LOGGER.warning("Missing dependency `airportsdata`; install with: pip install airportsdata")
+                cls._AIRPORTS_BY_ICAO_CACHE = {}
+                return cls._AIRPORTS_BY_ICAO_CACHE
+            try:
+                cls._AIRPORTS_BY_ICAO_CACHE = airportsdata.load("ICAO")
+            except Exception as exc:  # noqa: BLE001
+                LOGGER.warning("Failed to load ICAO airport database: %s", exc)
+                cls._AIRPORTS_BY_ICAO_CACHE = {}
+        return cls._AIRPORTS_BY_ICAO_CACHE
+
+    def _icao_to_iata(self, station_icao):
+        code = str(station_icao or "").strip().upper()
+        if not code:
+            return None
+        airport = self._airports_by_icao().get(code)
+        if isinstance(airport, dict):
+            iata = str(airport.get("iata") or "").strip().upper()
+            if iata:
+                return iata
+        return code
+
+    @staticmethod
+    def _parse_metar_payload_timestamp_utc(metar_payload):
+        if not isinstance(metar_payload, dict):
+            return None
+        raw_timestamp = str(metar_payload.get("timestamp") or "").strip()
+        if not raw_timestamp:
+            return None
+        try:
+            return datetime.strptime(raw_timestamp, "%Y/%m/%d %H:%M").replace(tzinfo=timezone.utc)
+        except ValueError:
+            LOGGER.debug("Unable to parse METAR payload timestamp: %s", raw_timestamp)
+            return None
+
+    def _infer_utc_datetime_from_metar_day_time(self, metar_day_utc, metar_time_z):
+        if metar_day_utc is None or not metar_time_z:
+            return None
+        time_token = str(metar_time_z).strip().upper()
+        if len(time_token) < 4:
+            return None
+        try:
+            day = int(metar_day_utc)
+            hour = int(time_token[0:2])
+            minute = int(time_token[2:4])
+        except (TypeError, ValueError):
+            return None
+
+        now_utc = self._utc_now_provider()
+        if now_utc.tzinfo is None:
+            now_utc = now_utc.replace(tzinfo=timezone.utc)
+        else:
+            now_utc = now_utc.astimezone(timezone.utc)
+
+        candidates = []
+        for month_offset in (-1, 0, 1):
+            year = now_utc.year
+            month = now_utc.month + month_offset
+            if month < 1:
+                month += 12
+                year -= 1
+            elif month > 12:
+                month -= 12
+                year += 1
+            try:
+                candidates.append(datetime(year, month, day, hour, minute, tzinfo=timezone.utc))
+            except ValueError:
+                continue
+        if not candidates:
+            return None
+        return min(candidates, key=lambda dt: abs((dt - now_utc).total_seconds()))
+
+    def _resolve_metar_observation_utc(self, metar_payload, metar_fields):
+        observed_utc = self._parse_metar_payload_timestamp_utc(metar_payload)
+        if observed_utc is not None:
+            return observed_utc
+        if not isinstance(metar_fields, dict):
+            return None
+        return self._infer_utc_datetime_from_metar_day_time(
+            metar_fields.get("metar_day_utc"),
+            metar_fields.get("metar_time_z"),
+        )
+
+    def _metar_time_local_hhmm(self, metar_payload, metar_fields):
+        if not self._local_timezone_name:
+            return None
+        observed_utc = self._resolve_metar_observation_utc(metar_payload, metar_fields)
+        if observed_utc is None:
+            return None
+        try:
+            zone = ZoneInfo(self._local_timezone_name)
+        except ZoneInfoNotFoundError:
+            LOGGER.warning("ZoneInfo database missing timezone '%s'.", self._local_timezone_name)
+            return None
+        return observed_utc.astimezone(zone).strftime("%H%M")
+
     @staticmethod
     def _quantity_value(value, unit=None):
         if value is None:
@@ -323,10 +459,12 @@ class WeatherData:
             wind_speed_kph = float(wind_speed_kph)
         if wind_gust_kph is not None:
             wind_gust_kph = float(wind_gust_kph)
+        metar_day_utc = None
         metar_time_z = None
         time_match = METAR_TIME_RE.search(raw)
         if time_match:
-            metar_time_z = f"{time_match.group(1)}{time_match.group(2)}Z"
+            metar_day_utc = int(time_match.group(1))
+            metar_time_z = f"{time_match.group(2)}{time_match.group(3)}Z"
         station = str(
             metar_payload.get("station")
             or getattr(decoded, "station_id", None)
@@ -345,6 +483,7 @@ class WeatherData:
             "wind_speed_kph": wind_speed_kph,
             "wind_gust_kph": wind_gust_kph,
             "metar_station": station,
+            "metar_day_utc": metar_day_utc,
             "metar_time_z": metar_time_z,
             "location": station or "LOCAL WX",
         }

@@ -1,5 +1,6 @@
 import sys
 import types
+from datetime import datetime, timezone
 
 import pytest
 
@@ -11,7 +12,10 @@ def test_weather_uses_metar_for_temp_wind_and_open_meteo_for_condition():
         return {"condition": "OVERCAST"}
 
     def metar_fetcher(_icao):
-        return {"raw": "LCPH 170850Z 27012KT 9999 FEW020 20/10 Q1016"}
+        return {
+            "raw": "LCPH 170850Z 27012KT 9999 FEW020 20/10 Q1016",
+            "timestamp": "2026/02/17 08:50",
+        }
 
     wx = WeatherData(
         latitude=34.0,
@@ -29,9 +33,13 @@ def test_weather_uses_metar_for_temp_wind_and_open_meteo_for_condition():
             "wind_speed_kph": 12 * 1.852,
             "wind_gust_kph": 18 * 1.852,
             "metar_station": "LCPH",
+            "metar_day_utc": 17,
             "metar_time_z": "0850Z",
             "location": "LCPH",
         },
+        timezone_name="Europe/Nicosia",
+        iata_mapper=lambda _icao: "PFO",
+        utc_now_provider=lambda: datetime(2026, 2, 17, 10, 0, tzinfo=timezone.utc),
     )
     payload, refreshed = wx.get_current_with_options(force_refresh=True)
 
@@ -44,7 +52,9 @@ def test_weather_uses_metar_for_temp_wind_and_open_meteo_for_condition():
     assert payload["wind_kph"] == pytest.approx(12 * 1.852)
     assert payload["wind_gust_kph"] == pytest.approx(18 * 1.852)
     assert payload["metar_station"] == "LCPH"
+    assert payload["metar_station_iata"] == "PFO"
     assert payload["metar_time_z"] == "0850Z"
+    assert payload["metar_time_local"] == "1050"
     assert payload["humidity_pct"] is not None
     assert payload["source"] == "metar+open-meteo"
 
@@ -78,6 +88,7 @@ def test_parse_metar_with_library_handles_negative_temp_and_variable_wind():
     assert parsed["dewpoint_c"] == -5
     assert parsed["wind_speed_kph"] == pytest.approx(3 * 1.852, rel=0.05)
     assert parsed["wind_dir_deg"] is None
+    assert parsed["metar_day_utc"] == 17
     assert parsed["metar_time_z"] == "0850Z"
 
 

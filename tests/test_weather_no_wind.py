@@ -60,10 +60,12 @@ def test_weather_summary_uses_metar_header_when_station_and_time_available():
             "wind_dir_deg": 45.0,
             "metar_station": "LCPH",
             "metar_time_z": "1130Z",
+            "metar_station_iata": "PFO",
+            "metar_time_local": "1330",
         },
     )
     header_text = [op["text"] for op in recorder.ops if op.get("op") == "draw_text" and op.get("xy") == [2, -1]]
-    assert header_text == ["LCPH 1130Z"]
+    assert header_text == ["PFO 1330"]
 
 
 def test_weather_summary_shows_gust_format_when_available():

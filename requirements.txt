@@ -5,3 +5,5 @@ FlightRadarAPI
 beautifulsoup4
 openmeteo-requests
 metar
+timezonefinder
+airportsdata

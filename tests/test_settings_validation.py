@@ -68,6 +68,34 @@ def test_validate_settings_rejects_missing_metar_dependency_when_icao_set(monkey
         validate_settings(settings)
 
 
+def test_validate_settings_rejects_missing_timezonefinder_dependency_when_icao_set(monkeypatch):
+    import pixoo_radar.settings as settings_module
+
+    def fake_find_spec(name):
+        if name == "timezonefinder":
+            return None
+        return object()
+
+    monkeypatch.setattr(settings_module, "find_spec", fake_find_spec)
+    settings = AppSettings(**{**_base_settings().__dict__, "weather_metar_icao": "LCPH"})
+    with pytest.raises(ValueError, match="dependency 'timezonefinder' is not installed"):
+        validate_settings(settings)
+
+
+def test_validate_settings_rejects_missing_airportsdata_dependency_when_icao_set(monkeypatch):
+    import pixoo_radar.settings as settings_module
+
+    def fake_find_spec(name):
+        if name == "airportsdata":
+            return None
+        return object()
+
+    monkeypatch.setattr(settings_module, "find_spec", fake_find_spec)
+    settings = AppSettings(**{**_base_settings().__dict__, "weather_metar_icao": "LCPH"})
+    with pytest.raises(ValueError, match="dependency 'airportsdata' is not installed"):
+        validate_settings(settings)
+
+
 def test_validate_settings_rejects_invalid_startup_connect_timeout():
     settings = AppSettings(**{**_base_settings().__dict__, "pixoo_startup_connect_timeout_seconds": 0})
     with pytest.raises(ValueError, match="PIXOO_STARTUP_CONNECT_TIMEOUT_SECONDS"):

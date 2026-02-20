@@ -225,9 +225,11 @@ def draw_weather_summary_frame(pizzoo, settings, weather: dict) -> None:
     wind_gust = wind_speed_value_for_unit(weather.get("wind_gust_kph"), settings.weather_wind_speed_unit)
     wind_dir_deg = normalize_wind_dir_deg(weather.get("wind_dir_deg"))
     wind_dir = format_wind_dir(wind_dir_deg) if wind_dir_deg is not None else None
-    metar_station = str(weather.get("metar_station") or "").strip().upper()
-    metar_time_z = str(weather.get("metar_time_z") or "").strip().upper()
-    weather_header = fit_text(f"{metar_station} {metar_time_z}", 10) if metar_station and metar_time_z else "Weather"
+    metar_station = str(weather.get("metar_station_iata") or weather.get("metar_station") or "").strip().upper()
+    metar_time_local = str(weather.get("metar_time_local") or "").strip().upper()
+    if not metar_time_local:
+        metar_time_local = str(weather.get("metar_time_z") or "").strip().upper()
+    weather_header = fit_text(f"{metar_station} {metar_time_local}", 10) if metar_station and metar_time_local else "Weather"
 
     pizzoo.cls()
     pizzoo.draw_rectangle(xy=(0, 0), width=64, height=64, color=COLOR_WX_BG, filled=True)
