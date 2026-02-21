@@ -102,6 +102,29 @@ def test_validate_settings_rejects_invalid_startup_connect_timeout():
         validate_settings(settings)
 
 
+def test_validate_settings_accepts_valid_poll_pause_window():
+    settings = AppSettings(**{**_base_settings().__dict__, "poll_pause_start_local": "0000", "poll_pause_end_local": "0700"})
+    assert validate_settings(settings) == settings
+
+
+def test_validate_settings_rejects_partial_poll_pause_window():
+    settings = AppSettings(**{**_base_settings().__dict__, "poll_pause_start_local": "0000", "poll_pause_end_local": ""})
+    with pytest.raises(ValueError, match="POLL_PAUSE_START_LOCAL and POLL_PAUSE_END_LOCAL must both be set"):
+        validate_settings(settings)
+
+
+def test_validate_settings_rejects_invalid_poll_pause_time_format():
+    settings = AppSettings(**{**_base_settings().__dict__, "poll_pause_start_local": "24:00", "poll_pause_end_local": "0700"})
+    with pytest.raises(ValueError, match="POLL_PAUSE_START_LOCAL must use 24-hour HHMM format"):
+        validate_settings(settings)
+
+
+def test_validate_settings_rejects_equal_poll_pause_times():
+    settings = AppSettings(**{**_base_settings().__dict__, "poll_pause_start_local": "0000", "poll_pause_end_local": "0000"})
+    with pytest.raises(ValueError, match="must not be equal"):
+        validate_settings(settings)
+
+
 def test_validate_settings_rejects_missing_openmeteo_dependency(monkeypatch):
     import pixoo_radar.settings as settings_module
 

@@ -1,9 +1,11 @@
+from datetime import time
+
 from pixoo_radar.controller import PixooRadarController
 from pixoo_radar.models import FlightSnapshot, RenderState, WeatherSnapshot
 from pixoo_radar.settings import AppSettings
 
 
-def _settings(data_refresh_seconds=60):
+def _settings(data_refresh_seconds=60, poll_pause_start_local="", poll_pause_end_local=""):
     return AppSettings(
         pixoo_ip="127.0.0.1",
         pixoo_port=80,
@@ -27,6 +29,8 @@ def _settings(data_refresh_seconds=60):
         weather_refresh_seconds=900,
         weather_view_seconds=10,
         weather_wind_speed_unit="mph",
+        poll_pause_start_local=poll_pause_start_local,
+        poll_pause_end_local=poll_pause_end_local,
     )
 
 
@@ -34,8 +38,10 @@ class FakePixooService:
     def __init__(self, reachable=True):
         self.reachable = reachable
         self.connect_calls = 0
+        self.is_reachable_calls = 0
 
     def is_reachable(self):
+        self.is_reachable_calls += 1
         return self.reachable
 
     def connect_with_retry(self, fail_fast=False):
@@ -46,8 +52,10 @@ class FakePixooService:
 class FakeFlightService:
     def __init__(self, snapshot=None):
         self.snapshot = snapshot
+        self.calls = 0
 
     def get_closest_flight(self, latitude, longitude):
+        self.calls += 1
         return self.snapshot
 
 
@@ -142,3 +150,81 @@ def test_run_once_no_flight_uses_fixed_poll_interval_sleep():
 
     assert controller.current_state == RenderState.IDLE_WEATHER
     assert sleeps == [60]
+
+
+def test_run_once_pause_window_skips_all_polling():
+    sleeps = []
+    pixoo_service = FakePixooService(reachable=True)
+    flight_service = FakeFlightService(snapshot=None)
+    controller = PixooRadarController(
+        _settings(data_refresh_seconds=60, poll_pause_start_local="0000", poll_pause_end_local="0700"),
+        pixoo_service=pixoo_service,
+        flight_service=flight_service,
+        weather_service=FakeWeatherService(),
+        sleep_fn=sleeps.append,
+        clock_fn=lambda: 1.0,
+        local_time_fn=lambda: time(1, 30),
+    )
+    controller.pizzoo = FakePizzoo()
+
+    controller.run_once()
+
+    assert sleeps == [60]
+    assert pixoo_service.is_reachable_calls == 0
+    assert flight_service.calls == 0
+
+
+def test_run_once_pause_window_handles_midnight_wrap():
+    sleeps = []
+    pixoo_service = FakePixooService(reachable=True)
+    flight_service = FakeFlightService(snapshot=None)
+    controller = PixooRadarController(
+        _settings(data_refresh_seconds=60, poll_pause_start_local="2300", poll_pause_end_local="0700"),
+        pixoo_service=pixoo_service,
+        flight_service=flight_service,
+        weather_service=FakeWeatherService(),
+        sleep_fn=sleeps.append,
+        clock_fn=lambda: 1.0,
+        local_time_fn=lambda: time(0, 15),
+    )
+    controller.pizzoo = FakePizzoo()
+
+    controller.run_once()
+
+    assert sleeps == [60]
+    assert pixoo_service.is_reachable_calls == 0
+    assert flight_service.calls == 0
+
+
+def test_pause_holding_screen_sent_once_per_pause_window(monkeypatch):
+    sleeps = []
+    sent = []
+    current = {"time": time(1, 0)}
+    pixoo_service = FakePixooService(reachable=True)
+    controller = PixooRadarController(
+        _settings(data_refresh_seconds=60, poll_pause_start_local="0000", poll_pause_end_local="0700"),
+        pixoo_service=pixoo_service,
+        flight_service=FakeFlightService(snapshot=None),
+        weather_service=FakeWeatherService(),
+        sleep_fn=sleeps.append,
+        clock_fn=lambda: 1.0,
+        local_time_fn=lambda: current["time"],
+    )
+    controller.pizzoo = FakePizzoo()
+    monkeypatch.setattr(
+        "pixoo_radar.controller.build_and_send_poll_pause_screen",
+        lambda _p, _s, resume_hhmm: sent.append(resume_hhmm),
+    )
+    monkeypatch.setattr("pixoo_radar.controller.build_and_send_weather_idle_screen", lambda *_args, **_kwargs: None)
+
+    controller.run_once()
+    current["time"] = time(1, 10)
+    controller.run_once()
+    assert sent == ["0700"]
+
+    current["time"] = time(8, 0)
+    controller.run_once()
+    current["time"] = time(1, 5)
+    controller.run_once()
+    assert sent == ["0700", "0700"]
+    assert sleeps == [60, 60, 60, 60]

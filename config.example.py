@@ -33,6 +33,14 @@ FLIGHT_SEARCH_RADIUS_METERS = 50000
 # Fixed polling interval for all flight API checks (seconds).
 DATA_REFRESH_SECONDS = 60
 
+# Optional local-time polling pause window (24h HHMM).
+# During this window, all poll activity is skipped and loop continues at
+# DATA_REFRESH_SECONDS cadence.
+# Leave both blank to disable.
+# Example overnight pause: "0000" -> "0700"
+POLL_PAUSE_START_LOCAL = ""
+POLL_PAUSE_END_LOCAL = ""
+
 # Flight animation frame delay (milliseconds).
 # Higher value = slower animation.
 ANIMATION_FRAME_SPEED = 300

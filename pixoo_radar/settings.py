@@ -1,7 +1,7 @@
 import logging
 import re
-from importlib.util import find_spec
 from dataclasses import dataclass
+from importlib.util import find_spec
 from math import isfinite
 from pathlib import Path
 
@@ -34,6 +34,8 @@ class AppSettings:
     weather_wind_speed_unit: str
     weather_metar_icao: str = ""
     pixoo_startup_connect_timeout_seconds: int = 120
+    poll_pause_start_local: str = ""
+    poll_pause_end_local: str = ""
 
 
 def _valid_log_level(level_name: str) -> bool:
@@ -43,6 +45,19 @@ def _valid_log_level(level_name: str) -> bool:
 def validate_settings(settings: AppSettings) -> AppSettings:
     """Validate startup configuration and raise a clear error on invalid values."""
     errors = []
+
+    pause_start = str(settings.poll_pause_start_local or "").strip()
+    pause_end = str(settings.poll_pause_end_local or "").strip()
+    pause_time_re = re.compile(r"^(?:[01]\d|2[0-3])[0-5]\d$")
+    if bool(pause_start) != bool(pause_end):
+        errors.append("POLL_PAUSE_START_LOCAL and POLL_PAUSE_END_LOCAL must both be set, or both be blank.")
+    elif pause_start:
+        if not pause_time_re.match(pause_start):
+            errors.append("POLL_PAUSE_START_LOCAL must use 24-hour HHMM format (for example 0000, 0730).")
+        if not pause_time_re.match(pause_end):
+            errors.append("POLL_PAUSE_END_LOCAL must use 24-hour HHMM format (for example 0700, 2315).")
+        if pause_start == pause_end:
+            errors.append("POLL_PAUSE_START_LOCAL and POLL_PAUSE_END_LOCAL must not be equal.")
 
     if not str(settings.pixoo_ip).strip():
         errors.append("PIXOO_IP must be a non-empty string.")
@@ -138,6 +153,8 @@ def load_settings() -> AppSettings:
             weather_wind_speed_unit=app_config.WEATHER_WIND_SPEED_UNIT,
             weather_metar_icao=getattr(app_config, "WEATHER_METAR_ICAO", ""),
             pixoo_startup_connect_timeout_seconds=getattr(app_config, "PIXOO_STARTUP_CONNECT_TIMEOUT_SECONDS", 120),
+            poll_pause_start_local=getattr(app_config, "POLL_PAUSE_START_LOCAL", ""),
+            poll_pause_end_local=getattr(app_config, "POLL_PAUSE_END_LOCAL", ""),
         )
     except AttributeError as exc:
         attr_match = re.search(r"has no attribute '([^']+)'", str(exc))

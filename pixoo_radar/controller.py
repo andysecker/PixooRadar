@@ -1,8 +1,10 @@
 import logging
+from datetime import datetime, time as local_time
 from time import monotonic, sleep
 
 from pixoo_radar.models import RenderState
 from pixoo_radar.render.flight_view import build_and_send_animation
+from pixoo_radar.render.holding_view import build_and_send_poll_pause_screen
 from pixoo_radar.render.weather_view import build_and_send_weather_idle_screen
 
 LOGGER = logging.getLogger("pixoo_radar")
@@ -17,6 +19,7 @@ class PixooRadarController:
         weather_service=None,
         sleep_fn=None,
         clock_fn=None,
+        local_time_fn=None,
     ):
         self.settings = settings
 
@@ -44,7 +47,11 @@ class PixooRadarController:
         self.current_flight_signature = None
         self.sleep_fn = sleep_fn or sleep
         self.clock_fn = clock_fn or monotonic
+        self.local_time_fn = local_time_fn or (lambda: datetime.now().time())
         self.last_cycle_started_at = None
+        self.poll_pause_start_time = self._parse_hhmm_time(getattr(settings, "poll_pause_start_local", ""))
+        self.poll_pause_end_time = self._parse_hhmm_time(getattr(settings, "poll_pause_end_local", ""))
+        self.poll_pause_notice_sent = False
 
     @staticmethod
     def flight_render_signature(data: dict) -> tuple:
@@ -63,11 +70,38 @@ class PixooRadarController:
         self.current_state = None
         self.current_flight_id = None
         self.current_flight_signature = None
+        self.poll_pause_notice_sent = False
 
     @staticmethod
     def _is_fatal_weather_error(exc: Exception) -> bool:
         msg = str(exc)
         return msg.startswith("Weather bootstrap failed:") or msg.startswith("Weather startup validation failed:")
+
+    @staticmethod
+    def _parse_hhmm_time(value: str) -> local_time | None:
+        token = str(value or "").strip()
+        if not token:
+            return None
+        if len(token) != 4 or not token.isdigit():
+            return None
+        try:
+            hour = int(token[0:2])
+            minute = int(token[2:4])
+            return local_time(hour=hour, minute=minute)
+        except Exception:  # noqa: BLE001
+            return None
+
+    def _is_poll_pause_active(self) -> bool:
+        start = self.poll_pause_start_time
+        end = self.poll_pause_end_time
+        if start is None or end is None:
+            return False
+        now = self.local_time_fn()
+        if not isinstance(now, local_time):
+            return False
+        if start < end:
+            return start <= now < end
+        return now >= start or now < end
 
     def _weather_seconds_until_refresh(self) -> int:
         seconds_until_refresh = getattr(self.weather_service, "seconds_until_refresh", None)
@@ -124,6 +158,41 @@ class PixooRadarController:
     def run_once(self):
         LOGGER.info("Starting polling cycle.")
         self.last_cycle_started_at = self.clock_fn()
+        pause_active = self._is_poll_pause_active()
+        if pause_active:
+            now_local = self.local_time_fn().strftime("%H:%M")
+            start_local = self.poll_pause_start_time.strftime("%H:%M")
+            end_local = self.poll_pause_end_time.strftime("%H:%M")
+            if not self.poll_pause_notice_sent:
+                LOGGER.info(
+                    "Polling pause window entered (%s-%s local, now %s). Sending pause holding screen.",
+                    start_local,
+                    end_local,
+                    now_local,
+                )
+                try:
+                    build_and_send_poll_pause_screen(
+                        self.pizzoo,
+                        self.settings,
+                        resume_hhmm=str(getattr(self.settings, "poll_pause_end_local", "")),
+                    )
+                    self.poll_pause_notice_sent = True
+                except Exception as exc:
+                    LOGGER.error("Failed to render polling-pause holding screen (%s).", exc)
+            else:
+                LOGGER.info("Polling pause still active; pause holding screen already shown (skipping resend).")
+            LOGGER.info(
+                "Polling pause active (%s-%s local, now %s). Skipping flight/weather polls for %ss.",
+                start_local,
+                end_local,
+                now_local,
+                self.settings.data_refresh_seconds,
+            )
+            self.sleep_fn(self.settings.data_refresh_seconds)
+            return
+        if self.poll_pause_notice_sent:
+            LOGGER.info("Polling pause window ended; resuming normal polling.")
+            self.poll_pause_notice_sent = False
         if not self.pixoo_service.is_reachable():
             LOGGER.warning("Pixoo offline; pausing flight/weather API updates until reconnect succeeds.")
             self.reconnect()

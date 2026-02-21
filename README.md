@@ -82,6 +82,7 @@ All runtime settings are in `config.py`.
 - Device/location: `PIXOO_IP`, `PIXOO_PORT`, `LATITUDE`, `LONGITUDE`, `FLIGHT_SEARCH_RADIUS_METERS`
 - Pixoo startup fail-fast: `PIXOO_STARTUP_CONNECT_TIMEOUT_SECONDS`
 - Polling: `DATA_REFRESH_SECONDS`
+- Optional polling pause window (local time): `POLL_PAUSE_START_LOCAL`, `POLL_PAUSE_END_LOCAL` (`HHMM`)
 - Idle weather: `WEATHER_REFRESH_SECONDS`, `WEATHER_VIEW_SECONDS`, `RUNWAY_HEADING_DEG`
 - METAR source: `WEATHER_METAR_ICAO` (4-letter ICAO; blank disables METAR fields)
 - Units: `FLIGHT_SPEED_UNIT` (`mph` or `kt`), `WEATHER_WIND_SPEED_UNIT` (`mph` or `kmh`; legacy `kph` accepted)
@@ -102,7 +103,7 @@ State machine values:
 Operational behavior:
 
 - Flight view is re-rendered when tracked flight telemetry changes (altitude, speed, heading, status).
-- Flight page 1 displays `CS` + raw altitude in feet (`12,345 ft`), not flight level (`FLxxx`).
+- Flight page 1 displays flight identifier as text-only + raw altitude in feet (`12,345 ft`), not flight level (`FLxxx`).
 - Flight page 2 displays aircraft text from ICAO mapping (`aircraft_type_icao -> model_display`) and `REG`.
 - ICAO display map source: `data/icao_model_display_map.json` (10-char-safe values for 64x64 text layout).
 - Fallback behavior when ICAO code is missing from map: parse `aircraft_type` (substring after first space), then ICAO code.
@@ -110,6 +111,13 @@ Operational behavior:
 - Moving ground targets are filtered as taxiing unless heading aligns with runway heading or reciprocal within `+/-10` degrees.
 - Flight API is polled on a fixed interval (`DATA_REFRESH_SECONDS`) for all flight polling.
 - No exponential backoff is used for no-flight periods.
+- Optional local-time pause window can suspend all polling activity:
+  - set both `POLL_PAUSE_START_LOCAL` and `POLL_PAUSE_END_LOCAL` in `HHMM` (24-hour) format
+  - each loop checks current local system time; when inside the window, no Pixoo/API polling is performed
+  - on pause-window entry, a dedicated black holding screen is sent once: `Updates paused. Resume at XXXX`
+  - pause-screen text is dark grey and rendered from a randomized top-left origin each time it is generated (anti burn-in)
+  - while pause remains active, the app does not resend the pause screen every cycle
+  - loop cadence remains unchanged (`DATA_REFRESH_SECONDS`)
 - If Pixoo is offline, flight/weather API polling is paused until reconnect succeeds.
 - Pixoo HTTP requests use a finite timeout (5s) to avoid indefinite hangs during device/network failures.
 - Each render path resets stale frame buffers before drawing to prevent frame accumulation after failed renders.
