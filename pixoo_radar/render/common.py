@@ -94,12 +94,6 @@ def draw_line(pizzoo, x0: int, y0: int, x1: int, y1: int, color: str, thickness:
             y0 += sy
 
 
-def format_flight_level(altitude_ft: int) -> str:
-    if altitude_ft is None or altitude_ft < 1000:
-        return "GND"
-    return f"FL{(altitude_ft // 100):03d}"
-
-
 def format_altitude_feet_raw(altitude_ft) -> str:
     """Format raw altitude in feet with thousands separator."""
     if altitude_ft is None:
