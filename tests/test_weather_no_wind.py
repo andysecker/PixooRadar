@@ -2,6 +2,7 @@ from pixoo_radar.render.weather_view import (
     COLOR_ACTIVE_RWY_ARROW,
     COLOR_WIND_ARROW,
     COLOR_WIND_SECTOR,
+    build_and_send_weather_idle_screen,
     draw_runway_wind_diagram,
     draw_weather_summary_frame,
 )
@@ -50,7 +51,25 @@ def test_weather_summary_omits_wind_direction_when_missing():
         },
     )
     bottom_text = [op["text"] for op in recorder.ops if op.get("op") == "draw_text" and op.get("xy", [None, None])[1] == 49]
-    assert bottom_text == ["-- 10Mph"]
+    assert bottom_text == ["- 10Mph"]
+
+
+def test_weather_summary_uses_var_when_wind_direction_is_variable():
+    recorder = RecordingPizzoo()
+    draw_weather_summary_frame(
+        recorder,
+        _settings(),
+        {
+            "condition": "CLEAR",
+            "temperature_c": 22.4,
+            "humidity_pct": 55.2,
+            "wind_kph": 16.0,
+            "wind_dir_deg": None,
+            "wind_dir_variable": True,
+        },
+    )
+    bottom_text = [op["text"] for op in recorder.ops if op.get("op") == "draw_text" and op.get("xy", [None, None])[1] == 49]
+    assert bottom_text == ["VAR 10Mph"]
 
 
 def test_weather_summary_uses_metar_header_when_station_and_time_available():
@@ -129,3 +148,38 @@ def test_runway_diagram_highlights_variable_wind_ticks_when_range_available():
     ]
     assert orange_ticks
     assert sector_ticks
+
+
+def test_weather_idle_screen_skips_runway_frame_when_wind_direction_missing(monkeypatch):
+    recorder = RecordingPizzoo()
+    monkeypatch.setattr("pixoo_radar.render.weather_view.dump_render_debug_gif", lambda _p, _speed: None)
+    build_and_send_weather_idle_screen(
+        recorder,
+        _settings(),
+        {
+            "condition": "CLEAR",
+            "temperature_c": 22.4,
+            "humidity_pct": 55.2,
+            "wind_kph": 16.0,
+            "wind_dir_deg": None,
+            "wind_dir_variable": True,
+        },
+    )
+    assert [op["op"] for op in recorder.ops].count("add_frame") == 0
+
+
+def test_weather_idle_screen_includes_runway_frame_when_wind_direction_available(monkeypatch):
+    recorder = RecordingPizzoo()
+    monkeypatch.setattr("pixoo_radar.render.weather_view.dump_render_debug_gif", lambda _p, _speed: None)
+    build_and_send_weather_idle_screen(
+        recorder,
+        _settings(),
+        {
+            "condition": "CLEAR",
+            "temperature_c": 22.4,
+            "humidity_pct": 55.2,
+            "wind_kph": 16.0,
+            "wind_dir_deg": 260.0,
+        },
+    )
+    assert [op["op"] for op in recorder.ops].count("add_frame") == 1

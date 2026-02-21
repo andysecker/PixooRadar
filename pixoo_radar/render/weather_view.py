@@ -229,16 +229,23 @@ def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg:
 def build_and_send_weather_idle_screen(pizzoo, settings, weather: dict) -> None:
     ensure_clean_render_buffer(pizzoo)
     draw_weather_summary_frame(pizzoo, settings, weather)
-    pizzoo.add_frame()
-    draw_runway_wind_diagram(
-        pizzoo,
-        settings,
-        wind_dir_deg=weather.get("wind_dir_deg"),
-        runway_heading_deg=float(settings.runway_heading_deg),
-        wind_dir_from=weather.get("wind_dir_from"),
-        wind_dir_to=weather.get("wind_dir_to"),
-    )
-    LOGGER.info("Sending weather idle screen (2 frames, %ss per frame).", settings.weather_view_seconds)
+    frame_count = 1
+    wind_dir = normalize_wind_dir_deg(weather.get("wind_dir_deg"))
+    if wind_dir is not None:
+        pizzoo.add_frame()
+        draw_runway_wind_diagram(
+            pizzoo,
+            settings,
+            wind_dir_deg=weather.get("wind_dir_deg"),
+            runway_heading_deg=float(settings.runway_heading_deg),
+            wind_dir_from=weather.get("wind_dir_from"),
+            wind_dir_to=weather.get("wind_dir_to"),
+        )
+        frame_count = 2
+        LOGGER.info("Sending weather idle screen (%s frames, %ss per frame).", frame_count, settings.weather_view_seconds)
+    else:
+        LOGGER.info("No wind direction available (missing/VRB); skipping runway weather frame.")
+        LOGGER.info("Sending weather idle screen (%s frame, %ss per frame).", frame_count, settings.weather_view_seconds)
     frame_speed = max(500, int(settings.weather_view_seconds * 1000))
     dump_render_debug_gif(pizzoo, frame_speed)
     pizzoo.render(frame_speed=frame_speed)
@@ -254,6 +261,12 @@ def draw_weather_summary_frame(pizzoo, settings, weather: dict) -> None:
     wind_gust = wind_speed_value_for_unit(weather.get("wind_gust_kph"), settings.weather_wind_speed_unit)
     wind_dir_deg = normalize_wind_dir_deg(weather.get("wind_dir_deg"))
     wind_dir = format_wind_dir(wind_dir_deg) if wind_dir_deg is not None else None
+    if wind_dir:
+        wind_dir_token = wind_dir
+    elif bool(weather.get("wind_dir_variable")):
+        wind_dir_token = "VAR"
+    else:
+        wind_dir_token = "-"
     metar_station = str(weather.get("metar_station_iata") or weather.get("metar_station") or "").strip().upper()
     metar_time_local = str(weather.get("metar_time_local") or "").strip().upper()
     if not metar_time_local:
@@ -267,10 +280,10 @@ def draw_weather_summary_frame(pizzoo, settings, weather: dict) -> None:
     hum_line = fit_text(f"HUM {humidity}", 10)
     if wind_gust is not None and wind_speed is not None:
         wind_text = f"{wind_speed}/{wind_gust}"
-        wind_line = fit_text(f"{wind_dir} {wind_text}", 10) if wind_dir else fit_text(f"-- {wind_text}", 10)
+        wind_line = fit_text(f"{wind_dir_token} {wind_text}", 10)
     else:
         wind_text = wind.replace(" ", "")
-        wind_line = fit_text(f"{wind_dir} {wind_text}", 10) if wind_dir else fit_text(f"-- {wind_text}", 10)
+        wind_line = fit_text(f"{wind_dir_token} {wind_text}", 10)
     pizzoo.draw_text(temperature, xy=(center_x(64, temperature), 13), font=settings.font_name, color=COLOR_WX_TEXT)
     pizzoo.draw_text(condition, xy=(center_x(64, condition), 25), font=settings.font_name, color=COLOR_WX_MUTED)
     pizzoo.draw_text(hum_line, xy=(center_x(64, hum_line), 37), font=settings.font_name, color=COLOR_WX_TEXT)

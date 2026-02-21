@@ -194,6 +194,7 @@ class WeatherData:
             "wind_kph": wind_kph,
             "wind_gust_kph": wind_gust_kph,
             "wind_dir_deg": metar_fields.get("wind_dir_deg"),
+            "wind_dir_variable": bool(metar_fields.get("wind_dir_variable")),
             "wind_dir_from": metar_fields.get("wind_dir_from"),
             "wind_dir_to": metar_fields.get("wind_dir_to"),
             "metar_station": metar_station,
@@ -407,6 +408,25 @@ class WeatherData:
             return value
         return None
 
+    @staticmethod
+    def _extract_wind_direction_token(raw, metar_module):
+        wind_re = getattr(metar_module, "WIND_RE", None)
+        if wind_re is None:
+            return None
+        text = str(raw or "").strip().upper()
+        if not text:
+            return None
+        tokens = text.split()
+        for idx in range(len(tokens)):
+            segment = " ".join(tokens[idx:]) + " "
+            match = wind_re.match(segment)
+            if not match:
+                continue
+            token = str(match.group("dir") or "").strip().upper()
+            if token:
+                return token.replace("O", "0")
+        return None
+
     def _parse_metar_fields_with_library(self, metar_payload):
         if not isinstance(metar_payload, dict):
             return {}
@@ -430,6 +450,7 @@ class WeatherData:
 
         temp_c = self._quantity_value(getattr(decoded, "temp", None), "C")
         dewpoint_c = self._quantity_value(getattr(decoded, "dewpt", None), "C")
+        wind_dir_token = self._extract_wind_direction_token(raw, Metar)
         wind_speed_kph = self._quantity_value(getattr(decoded, "wind_speed", None), "KMH")
         if wind_speed_kph is None:
             wind_speed_kph = self._quantity_value(getattr(decoded, "wind_speed", None), "KPH")
@@ -438,6 +459,7 @@ class WeatherData:
             wind_gust_kph = self._quantity_value(getattr(decoded, "wind_gust", None), "KPH")
         raw_wind_dir = getattr(decoded, "wind_dir", None)
         wind_dir_deg = self._quantity_value(raw_wind_dir)
+        wind_dir_variable = wind_dir_token == "VRB"
         wind_dir_from = self._quantity_value(
             getattr(decoded, "wind_dir_from", None) or getattr(decoded, "wind_var_from", None)
         )
@@ -478,6 +500,7 @@ class WeatherData:
             "temperature_c": temp_c,
             "dewpoint_c": dewpoint_c,
             "wind_dir_deg": wind_dir_deg,
+            "wind_dir_variable": wind_dir_variable,
             "wind_dir_from": wind_dir_from,
             "wind_dir_to": wind_dir_to,
             "wind_speed_kph": wind_speed_kph,

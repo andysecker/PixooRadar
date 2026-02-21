@@ -3,7 +3,7 @@
 Pixoo64 display app with:
 
 - `Flight mode`: shows the closest flight from FlightRadar24 data.
-- `Idle weather mode`: always shows weather views (including runway/wind diagram) when no flights are available.
+- `Idle weather mode`: always shows weather summary when no flights are available, and adds runway/wind diagram when wind direction is available.
 
 This is no longer the original fork behavior. The app now prioritizes useful always-on output instead of showing stale flight data.
 
@@ -17,7 +17,7 @@ This is no longer the original fork behavior. The app now prioritizes useful alw
 - Speed unit configurable (`mph` or `kt`)
 
 ### Idle Weather Mode
-Two-frame weather loop (frame duration configurable):
+Weather loop (frame duration configurable):
 
 1. Weather summary
 - Top bar header shows METAR station/time when available in human-friendly local format (e.g. `PFO 1330`), otherwise `Weather`
@@ -28,8 +28,10 @@ Two-frame weather loop (frame duration configurable):
 - Condition
 - Humidity
 - Wind (direction + speed, with gusts when available)
+  - Variable direction (`VRB`) shows as `VAR`
+  - Missing/omitted direction shows as `-`
 
-2. Runway wind diagram
+2. Runway wind diagram (shown only when wind direction bearing is available)
 - Runway drawn at your configured heading
 - View is rotated 180° (south-up orientation)
 - Wind arrow overlaid by current wind direction
@@ -123,13 +125,15 @@ Operational behavior:
 - Weather wind line format:
   - non-gusting: e.g. `NE 10Mph`
   - gusting: e.g. `NE 10/18`
-  - unknown direction: `--`
+  - variable direction: `VAR 10Mph`
+  - unknown/missing direction: `- 10Mph`
 - Weather summary top header format:
   - with METAR station+time: `IATA HHMM` local (example: `PFO 1330`)
   - fallback when IATA mapping is unavailable: `ICAO HHMM` local
   - fallback when local-time conversion is unavailable: `ICAO HHMMZ` from METAR
   - fallback when unavailable: `Weather`
-- On runway weather view, if METAR provides variable wind sector (`dddVddd`), nearest boundary tick marks are highlighted in orange.
+- On runway weather view, if METAR provides variable wind sector (`dddVddd`), boundary ticks are highlighted in orange and intermediate sector ticks are highlighted in lighter blue.
+- If wind direction is missing or variable-only (`VRB`), runway weather view is skipped for that cycle and only summary view is rendered.
 
 ## Refactored Architecture
 

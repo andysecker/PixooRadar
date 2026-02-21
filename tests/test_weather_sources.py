@@ -88,8 +88,17 @@ def test_parse_metar_with_library_handles_negative_temp_and_variable_wind():
     assert parsed["dewpoint_c"] == -5
     assert parsed["wind_speed_kph"] == pytest.approx(3 * 1.852, rel=0.05)
     assert parsed["wind_dir_deg"] is None
+    assert parsed["wind_dir_variable"] is True
     assert parsed["metar_day_utc"] == 17
     assert parsed["metar_time_z"] == "0850Z"
+
+
+def test_parse_metar_with_library_does_not_treat_missing_direction_as_variable():
+    pytest.importorskip("metar")
+    wx = WeatherData(latitude=0.0, longitude=0.0, metar_parser=None)
+    parsed = wx._parse_metar_fields_with_library({"raw": "EGXX 170850Z ///03KT 9999 FEW020 10/05 Q1016"})
+    assert parsed["wind_dir_deg"] is None
+    assert parsed["wind_dir_variable"] is False
 
 
 def test_parse_metar_with_library_extracts_wind_gust():
