@@ -1,4 +1,10 @@
-from pixoo_radar.render.weather_view import COLOR_ACTIVE_RWY_ARROW, COLOR_WIND_ARROW, draw_runway_wind_diagram, draw_weather_summary_frame
+from pixoo_radar.render.weather_view import (
+    COLOR_ACTIVE_RWY_ARROW,
+    COLOR_WIND_ARROW,
+    COLOR_WIND_SECTOR,
+    draw_runway_wind_diagram,
+    draw_weather_summary_frame,
+)
 from pixoo_radar.settings import AppSettings
 from tests.render_recorder import RecordingPizzoo
 
@@ -117,4 +123,9 @@ def test_runway_diagram_highlights_variable_wind_ticks_when_range_available():
         op for op in recorder.ops
         if op.get("op") == "draw_rectangle" and op.get("color") == COLOR_WIND_ARROW and op.get("width") == 1 and op.get("height") == 1
     ]
+    sector_ticks = [
+        op for op in recorder.ops
+        if op.get("op") == "draw_rectangle" and op.get("color") == COLOR_WIND_SECTOR and op.get("width") == 1 and op.get("height") == 1
+    ]
     assert orange_ticks
+    assert sector_ticks

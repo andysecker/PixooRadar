@@ -22,6 +22,7 @@ LOGGER = logging.getLogger("pixoo_radar")
 
 COLOR_WX_BG = "#10243F"
 COLOR_WX_ACCENT = "#2F6EA4"
+COLOR_WIND_SECTOR = "#4E82B3"
 COLOR_WX_TEXT = "#EAF6FF"
 COLOR_WX_MUTED = "#A8C7DE"
 COLOR_RWY = "#111111"
@@ -56,6 +57,27 @@ def nearest_drawn_tick_bearing(wind_dir_deg):
         return None
     tick_bearings = range(0, 360, 10)
     return min(tick_bearings, key=lambda b: abs(signed_angle_diff_deg(wind_dir, float(b))))
+
+
+def variable_sector_ticks(from_tick, to_tick):
+    if from_tick is None or to_tick is None:
+        return set()
+
+    def walk(step):
+        ticks = []
+        current = int(from_tick) % 360
+        target = int(to_tick) % 360
+        for _ in range(37):
+            ticks.append(current)
+            if current == target:
+                break
+            current = (current + step) % 360
+        return ticks
+
+    clockwise = walk(10)
+    counter_clockwise = walk(-10)
+    path = clockwise if len(clockwise) <= len(counter_clockwise) else counter_clockwise
+    return set(path)
 
 
 def resolve_active_runway_heading(wind_dir_deg, runway_heading_deg: float) -> float | None:
@@ -140,10 +162,12 @@ def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg:
     highlighted_ticks = set()
     from_tick = nearest_drawn_tick_bearing(wind_dir_from)
     to_tick = nearest_drawn_tick_bearing(wind_dir_to)
+    sector_ticks = variable_sector_ticks(from_tick, to_tick)
     if from_tick is not None:
         highlighted_ticks.add(from_tick)
     if to_tick is not None:
         highlighted_ticks.add(to_tick)
+    sector_inner_ticks = sector_ticks - highlighted_ticks
 
     for b in range(0, 360, 10):
         vb = view_bearing(b)
@@ -151,7 +175,12 @@ def draw_runway_wind_diagram(pizzoo, settings, wind_dir_deg, runway_heading_deg:
             continue
         x1, y1 = bearing_to_xy(cx, cy, vb, 28)
         x2, y2 = bearing_to_xy(cx, cy, vb, 30)
-        tick_color = COLOR_WIND_ARROW if b in highlighted_ticks else COLOR_WX_ACCENT
+        if b in highlighted_ticks:
+            tick_color = COLOR_WIND_ARROW
+        elif b in sector_inner_ticks:
+            tick_color = COLOR_WIND_SECTOR
+        else:
+            tick_color = COLOR_WX_ACCENT
         draw_line(pizzoo, x1, y1, x2, y2, color=tick_color, thickness=1)
 
     pizzoo.draw_text("S", xy=(center_x(64, "S") + 2, -1), font=settings.runway_label_font_name, color=COLOR_WX_TEXT)
