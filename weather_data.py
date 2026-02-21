@@ -481,6 +481,20 @@ class WeatherData:
             wind_speed_kph = float(wind_speed_kph)
         if wind_gust_kph is not None:
             wind_gust_kph = float(wind_gust_kph)
+        wind_dir_class = "bearing"
+        if wind_dir_deg is None:
+            wind_dir_class = "vrb" if wind_dir_variable else "missing"
+        if LOGGER.isEnabledFor(logging.DEBUG):
+            LOGGER.debug(
+                "METAR wind direction classification (%s): %s "
+                "(token=%s, dir=%s, from=%s, to=%s).",
+                self.metar_icao or "unknown",
+                wind_dir_class,
+                wind_dir_token,
+                wind_dir_deg,
+                wind_dir_from,
+                wind_dir_to,
+            )
         metar_day_utc = None
         metar_time_z = None
         time_match = METAR_TIME_RE.search(raw)

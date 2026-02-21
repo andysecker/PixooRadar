@@ -62,14 +62,27 @@ class FlightData:
             LOGGER.info("Flight API returned no candidates in search area.")
             return None, None
 
-        closest_flight = choose_closest_flight(
+        closest_flight, filter_stats = choose_closest_flight(
             flights,
             lat,
             lon,
             runway_heading_deg=RUNWAY_HEADING_DEG,
+            return_stats=True,
         )
+        if LOGGER.isEnabledFor(logging.DEBUG):
+            LOGGER.debug("Flight candidate filter stats: %s", filter_stats)
         if not closest_flight:
-            LOGGER.info("No usable flight candidate after filtering.")
+            LOGGER.info(
+                "No usable flight candidate after filtering "
+                "(total=%s, missing_airline=%s, stationary_ground=%s, taxiing_ground=%s, "
+                "distance_error=%s, usable=%s).",
+                filter_stats.get("total"),
+                filter_stats.get("missing_airline"),
+                filter_stats.get("stationary_ground"),
+                filter_stats.get("taxiing_ground"),
+                filter_stats.get("distance_error"),
+                filter_stats.get("usable"),
+            )
             return None, None
 
         if LOGGER.isEnabledFor(logging.DEBUG):

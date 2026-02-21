@@ -52,6 +52,14 @@ class PixooRadarController:
         self.poll_pause_start_time = self._parse_hhmm_time(getattr(settings, "poll_pause_start_local", ""))
         self.poll_pause_end_time = self._parse_hhmm_time(getattr(settings, "poll_pause_end_local", ""))
         self.poll_pause_notice_sent = False
+        if self.poll_pause_start_time and self.poll_pause_end_time:
+            LOGGER.info(
+                "Polling pause window configured: %s-%s local.",
+                str(getattr(settings, "poll_pause_start_local", "")).strip(),
+                str(getattr(settings, "poll_pause_end_local", "")).strip(),
+            )
+        else:
+            LOGGER.info("Polling pause window disabled.")
 
     @staticmethod
     def flight_render_signature(data: dict) -> tuple:
@@ -178,7 +186,11 @@ class PixooRadarController:
                     )
                     self.poll_pause_notice_sent = True
                 except Exception as exc:
-                    LOGGER.error("Failed to render polling-pause holding screen (%s).", exc)
+                    LOGGER.error(
+                        "Failed to render polling-pause holding screen (%s). "
+                        "Will retry next cycle while pause remains active.",
+                        exc,
+                    )
             else:
                 LOGGER.info("Polling pause still active; pause holding screen already shown (skipping resend).")
             LOGGER.info(

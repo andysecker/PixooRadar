@@ -2,7 +2,6 @@ import hashlib
 import json
 from pathlib import Path
 
-from pixoo_radar.render.holding_view import build_and_send_holding_screen
 from pixoo_radar.render.weather_view import draw_runway_wind_diagram, draw_weather_summary_frame
 from pixoo_radar.settings import AppSettings
 from tests.render_recorder import RecordingPizzoo
@@ -71,12 +70,4 @@ def test_runway_diagram_snapshot_hash():
     )
 
     expected_hash = (GOLDEN_DIR / "runway_diagram.sha256").read_text(encoding="utf-8").strip()
-    assert _ops_sha256(recorder.ops) == expected_hash
-
-
-def test_holding_screen_snapshot_hash():
-    recorder = RecordingPizzoo()
-    build_and_send_holding_screen(recorder, _settings(), status="NO FLIGHTS")
-
-    expected_hash = (GOLDEN_DIR / "holding_screen.sha256").read_text(encoding="utf-8").strip()
     assert _ops_sha256(recorder.ops) == expected_hash

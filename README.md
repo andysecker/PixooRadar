@@ -185,7 +185,7 @@ Current tests cover:
 - state transition resolution
 - controller deterministic cycle timing (`run_once` with injected sleeper/clock)
 - runway active-heading and label placement helpers
-- renderer golden snapshots (weather summary, runway diagram hash, holding screen hash)
+- renderer golden snapshots (weather summary, runway diagram hash)
 - stationary ground-flight filtering
 - taxiing ground-flight filtering (runway-alignment gate for moving ground targets)
 - aircraft display mapping + fallback behavior

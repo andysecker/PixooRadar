@@ -87,26 +87,49 @@ def choose_closest_flight(
     longitude: float,
     runway_heading_deg: float,
     alignment_tolerance_deg: float = 10.0,
+    return_stats: bool = False,
 ):
-    """Return closest usable flight candidate or None."""
+    """Return closest usable flight candidate or None.
+
+    If `return_stats` is True, returns `(closest_flight, stats_dict)`.
+    """
     closest_flight = None
     min_dist = float("inf")
+    stats = {
+        "total": 0,
+        "missing_airline": 0,
+        "stationary_ground": 0,
+        "taxiing_ground": 0,
+        "distance_error": 0,
+        "usable": 0,
+        "selected_distance_km": None,
+    }
     for flight in flights:
+        stats["total"] += 1
         if not has_airline_info(flight):
+            stats["missing_airline"] += 1
             continue
         if is_stationary_ground_target(flight):
+            stats["stationary_ground"] += 1
             continue
         if is_taxiing_ground_target(
             flight,
             runway_heading_deg=runway_heading_deg,
             alignment_tolerance_deg=alignment_tolerance_deg,
         ):
+            stats["taxiing_ground"] += 1
             continue
+        stats["usable"] += 1
         try:
             dist = haversine_km(latitude, longitude, flight.latitude, flight.longitude)
         except Exception:
+            stats["distance_error"] += 1
             continue
         if dist < min_dist:
             min_dist = dist
             closest_flight = flight
+    if closest_flight is not None:
+        stats["selected_distance_km"] = min_dist
+    if return_stats:
+        return closest_flight, stats
     return closest_flight

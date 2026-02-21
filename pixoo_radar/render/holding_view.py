@@ -2,25 +2,11 @@ import logging
 import random
 
 from .common import dump_render_debug_gif, ensure_clean_render_buffer, measure_text_width
-from .flight_view import draw_info_page, draw_top_section
 
 LOGGER = logging.getLogger("pixoo_radar")
 COLOR_POLL_PAUSE_TEXT = "#4A4A4A"
 POLL_PAUSE_LINE_Y_OFFSETS = (0, 12, 28, 40)
 POLL_PAUSE_FONT_HEIGHT = 8
-
-
-def build_and_send_holding_screen(pizzoo, settings, status: str = "NO FLIGHTS") -> None:
-    ensure_clean_render_buffer(pizzoo)
-    radius_km = max(1, int(round(settings.flight_search_radius_meters / 1000)))
-    range_text = f"{radius_km}KM"
-
-    pizzoo.cls()
-    draw_top_section(pizzoo, settings, logo="", origin="---", destination="---", airline_name=status, y_route=20)
-    draw_info_page(pizzoo, settings, ("STATUS", status[:10]), ("RANGE", range_text))
-    LOGGER.info("Sending holding screen (%s).", status)
-    dump_render_debug_gif(pizzoo, settings.animation_frame_speed)
-    pizzoo.render(frame_speed=settings.animation_frame_speed)
 
 
 def build_and_send_poll_pause_screen(pizzoo, settings, resume_hhmm: str) -> None:

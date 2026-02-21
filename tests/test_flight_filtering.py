@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 from flight_data import FlightData
+from pixoo_radar.flight.filters import choose_closest_flight
 
 
 class FakeApi:
@@ -83,3 +84,25 @@ def test_ground_movement_aligned_with_reciprocal_runway_is_allowed():
     data = fd.get_closest_flight_data(1.0, 1.0, save_logo=False)
     assert data is not None
     assert data["icao24"] == "icao1"
+
+
+def test_choose_closest_flight_can_return_filter_stats():
+    stationary = _flight(icao="icao1", altitude=0, ground_speed=0, heading=112)
+    taxiing = _flight(icao="icao2", altitude=0, ground_speed=15, heading=200)
+    airborne = _flight(icao="icao3", altitude=1000, ground_speed=200, heading=110, lat=1.05, lon=1.05)
+
+    closest, stats = choose_closest_flight(
+        [stationary, taxiing, airborne],
+        latitude=1.0,
+        longitude=1.0,
+        runway_heading_deg=110,
+        return_stats=True,
+    )
+
+    assert closest is not None
+    assert closest.icao == "icao3"
+    assert stats["total"] == 3
+    assert stats["stationary_ground"] == 1
+    assert stats["taxiing_ground"] == 1
+    assert stats["usable"] == 1
+    assert stats["selected_distance_km"] is not None
